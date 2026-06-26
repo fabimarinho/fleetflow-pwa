@@ -22,7 +22,7 @@ function ViagensList() {
     queryFn: async () => {
       const { data } = await supabase
         .from("viagens")
-        .select("*, veiculos(placa,modelo), secretarias(nome), profiles!viagens_motorista_id_fkey(nome)")
+        .select("*, veiculos(placa,modelo), secretarias(nome), profiles!viagens_motorista_profile_fkey(nome)")
         .order("hora_saida", { ascending: false })
         .limit(100);
       return data ?? [];
