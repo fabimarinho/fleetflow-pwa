@@ -14,16 +14,253 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          matricula: string | null
+          nome: string
+          secretaria_id: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          matricula?: string | null
+          nome?: string
+          secretaria_id?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matricula?: string | null
+          nome?: string
+          secretaria_id?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "secretarias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      secretarias: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          sigla: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          sigla?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          sigla?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      veiculos: {
+        Row: {
+          ano: number | null
+          cor: string | null
+          created_at: string
+          id: string
+          km_atual: number
+          marca: string | null
+          modelo: string
+          observacoes: string | null
+          placa: string
+          secretaria_id: string | null
+          status: Database["public"]["Enums"]["veiculo_status"]
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          ano?: number | null
+          cor?: string | null
+          created_at?: string
+          id?: string
+          km_atual?: number
+          marca?: string | null
+          modelo: string
+          observacoes?: string | null
+          placa: string
+          secretaria_id?: string | null
+          status?: Database["public"]["Enums"]["veiculo_status"]
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ano?: number | null
+          cor?: string | null
+          created_at?: string
+          id?: string
+          km_atual?: number
+          marca?: string | null
+          modelo?: string
+          observacoes?: string | null
+          placa?: string
+          secretaria_id?: string | null
+          status?: Database["public"]["Enums"]["veiculo_status"]
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veiculos_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "secretarias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      viagens: {
+        Row: {
+          assinatura_url: string | null
+          combustivel: string | null
+          created_at: string
+          destino: string
+          foto_hodometro_retorno_url: string | null
+          foto_hodometro_saida_url: string | null
+          hora_chegada: string | null
+          hora_saida: string
+          id: string
+          km_retorno: number | null
+          km_saida: number
+          motorista_id: string
+          numero: number
+          objetivo: string | null
+          ocorrencias: string | null
+          origem: string
+          secretaria_id: string | null
+          servidor_matricula: string | null
+          servidor_nome: string | null
+          status: Database["public"]["Enums"]["viagem_status"]
+          updated_at: string
+          veiculo_id: string
+        }
+        Insert: {
+          assinatura_url?: string | null
+          combustivel?: string | null
+          created_at?: string
+          destino: string
+          foto_hodometro_retorno_url?: string | null
+          foto_hodometro_saida_url?: string | null
+          hora_chegada?: string | null
+          hora_saida?: string
+          id?: string
+          km_retorno?: number | null
+          km_saida: number
+          motorista_id: string
+          numero?: number
+          objetivo?: string | null
+          ocorrencias?: string | null
+          origem: string
+          secretaria_id?: string | null
+          servidor_matricula?: string | null
+          servidor_nome?: string | null
+          status?: Database["public"]["Enums"]["viagem_status"]
+          updated_at?: string
+          veiculo_id: string
+        }
+        Update: {
+          assinatura_url?: string | null
+          combustivel?: string | null
+          created_at?: string
+          destino?: string
+          foto_hodometro_retorno_url?: string | null
+          foto_hodometro_saida_url?: string | null
+          hora_chegada?: string | null
+          hora_saida?: string
+          id?: string
+          km_retorno?: number | null
+          km_saida?: number
+          motorista_id?: string
+          numero?: number
+          objetivo?: string | null
+          ocorrencias?: string | null
+          origem?: string
+          secretaria_id?: string | null
+          servidor_matricula?: string | null
+          servidor_nome?: string | null
+          status?: Database["public"]["Enums"]["viagem_status"]
+          updated_at?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viagens_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "secretarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viagens_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin_or_gestor: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "administrador" | "gestor" | "motorista"
+      veiculo_status: "disponivel" | "em_uso" | "em_manutencao"
+      viagem_status: "em_andamento" | "finalizada" | "cancelada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +387,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["administrador", "gestor", "motorista"],
+      veiculo_status: ["disponivel", "em_uso", "em_manutencao"],
+      viagem_status: ["em_andamento", "finalizada", "cancelada"],
+    },
   },
 } as const
