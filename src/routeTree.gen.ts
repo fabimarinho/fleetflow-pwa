@@ -17,6 +17,7 @@ import { Route as AuthenticatedVeiculosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedViagensIndexRouteImport } from './routes/_authenticated/viagens.index'
 import { Route as AuthenticatedViagensNovaRouteImport } from './routes/_authenticated/viagens.nova'
+import { Route as AuthenticatedViagensIdRouteImport } from './routes/_authenticated/viagens.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -59,6 +60,11 @@ const AuthenticatedViagensNovaRoute =
     path: '/nova',
     getParentRoute: () => AuthenticatedViagensRoute,
   } as any)
+const AuthenticatedViagensIdRoute = AuthenticatedViagensIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedViagensRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/veiculos': typeof AuthenticatedVeiculosRoute
   '/viagens': typeof AuthenticatedViagensRouteWithChildren
+  '/viagens/$id': typeof AuthenticatedViagensIdRoute
   '/viagens/nova': typeof AuthenticatedViagensNovaRoute
   '/viagens/': typeof AuthenticatedViagensIndexRoute
 }
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/veiculos': typeof AuthenticatedVeiculosRoute
+  '/viagens/$id': typeof AuthenticatedViagensIdRoute
   '/viagens/nova': typeof AuthenticatedViagensNovaRoute
   '/viagens': typeof AuthenticatedViagensIndexRoute
 }
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/veiculos': typeof AuthenticatedVeiculosRoute
   '/_authenticated/viagens': typeof AuthenticatedViagensRouteWithChildren
+  '/_authenticated/viagens/$id': typeof AuthenticatedViagensIdRoute
   '/_authenticated/viagens/nova': typeof AuthenticatedViagensNovaRoute
   '/_authenticated/viagens/': typeof AuthenticatedViagensIndexRoute
 }
@@ -96,10 +105,18 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/veiculos'
     | '/viagens'
+    | '/viagens/$id'
     | '/viagens/nova'
     | '/viagens/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/veiculos' | '/viagens/nova' | '/viagens'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/veiculos'
+    | '/viagens/$id'
+    | '/viagens/nova'
+    | '/viagens'
   id:
     | '__root__'
     | '/'
@@ -108,6 +125,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/veiculos'
     | '/_authenticated/viagens'
+    | '/_authenticated/viagens/$id'
     | '/_authenticated/viagens/nova'
     | '/_authenticated/viagens/'
   fileRoutesById: FileRoutesById
@@ -176,15 +194,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedViagensNovaRouteImport
       parentRoute: typeof AuthenticatedViagensRoute
     }
+    '/_authenticated/viagens/$id': {
+      id: '/_authenticated/viagens/$id'
+      path: '/$id'
+      fullPath: '/viagens/$id'
+      preLoaderRoute: typeof AuthenticatedViagensIdRouteImport
+      parentRoute: typeof AuthenticatedViagensRoute
+    }
   }
 }
 
 interface AuthenticatedViagensRouteChildren {
+  AuthenticatedViagensIdRoute: typeof AuthenticatedViagensIdRoute
   AuthenticatedViagensNovaRoute: typeof AuthenticatedViagensNovaRoute
   AuthenticatedViagensIndexRoute: typeof AuthenticatedViagensIndexRoute
 }
 
 const AuthenticatedViagensRouteChildren: AuthenticatedViagensRouteChildren = {
+  AuthenticatedViagensIdRoute: AuthenticatedViagensIdRoute,
   AuthenticatedViagensNovaRoute: AuthenticatedViagensNovaRoute,
   AuthenticatedViagensIndexRoute: AuthenticatedViagensIndexRoute,
 }
