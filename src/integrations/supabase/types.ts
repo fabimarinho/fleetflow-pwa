@@ -228,6 +228,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "viagens_motorista_profile_fkey"
+            columns: ["motorista_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "viagens_secretaria_id_fkey"
             columns: ["secretaria_id"]
             isOneToOne: false
