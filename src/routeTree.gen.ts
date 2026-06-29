@@ -14,7 +14,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedViagensRouteImport } from './routes/_authenticated/viagens'
 import { Route as AuthenticatedVeiculosRouteImport } from './routes/_authenticated/veiculos'
+import { Route as AuthenticatedServidoresRouteImport } from './routes/_authenticated/servidores'
+import { Route as AuthenticatedSecretariasRouteImport } from './routes/_authenticated/secretarias'
+import { Route as AuthenticatedManutencoesRouteImport } from './routes/_authenticated/manutencoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAbastecimentosRouteImport } from './routes/_authenticated/abastecimentos'
 import { Route as AuthenticatedViagensIndexRouteImport } from './routes/_authenticated/viagens.index'
 import { Route as AuthenticatedViagensNovaRouteImport } from './routes/_authenticated/viagens.nova'
 import { Route as AuthenticatedViagensIdRouteImport } from './routes/_authenticated/viagens.$id'
@@ -43,11 +47,34 @@ const AuthenticatedVeiculosRoute = AuthenticatedVeiculosRouteImport.update({
   path: '/veiculos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedServidoresRoute = AuthenticatedServidoresRouteImport.update({
+  id: '/servidores',
+  path: '/servidores',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSecretariasRoute =
+  AuthenticatedSecretariasRouteImport.update({
+    id: '/secretarias',
+    path: '/secretarias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedManutencoesRoute =
+  AuthenticatedManutencoesRouteImport.update({
+    id: '/manutencoes',
+    path: '/manutencoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAbastecimentosRoute =
+  AuthenticatedAbastecimentosRouteImport.update({
+    id: '/abastecimentos',
+    path: '/abastecimentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedViagensIndexRoute =
   AuthenticatedViagensIndexRouteImport.update({
     id: '/',
@@ -69,7 +96,11 @@ const AuthenticatedViagensIdRoute = AuthenticatedViagensIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/abastecimentos': typeof AuthenticatedAbastecimentosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/manutencoes': typeof AuthenticatedManutencoesRoute
+  '/secretarias': typeof AuthenticatedSecretariasRoute
+  '/servidores': typeof AuthenticatedServidoresRoute
   '/veiculos': typeof AuthenticatedVeiculosRoute
   '/viagens': typeof AuthenticatedViagensRouteWithChildren
   '/viagens/$id': typeof AuthenticatedViagensIdRoute
@@ -79,7 +110,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/abastecimentos': typeof AuthenticatedAbastecimentosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/manutencoes': typeof AuthenticatedManutencoesRoute
+  '/secretarias': typeof AuthenticatedSecretariasRoute
+  '/servidores': typeof AuthenticatedServidoresRoute
   '/veiculos': typeof AuthenticatedVeiculosRoute
   '/viagens/$id': typeof AuthenticatedViagensIdRoute
   '/viagens/nova': typeof AuthenticatedViagensNovaRoute
@@ -90,7 +125,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/abastecimentos': typeof AuthenticatedAbastecimentosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/manutencoes': typeof AuthenticatedManutencoesRoute
+  '/_authenticated/secretarias': typeof AuthenticatedSecretariasRoute
+  '/_authenticated/servidores': typeof AuthenticatedServidoresRoute
   '/_authenticated/veiculos': typeof AuthenticatedVeiculosRoute
   '/_authenticated/viagens': typeof AuthenticatedViagensRouteWithChildren
   '/_authenticated/viagens/$id': typeof AuthenticatedViagensIdRoute
@@ -102,7 +141,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/abastecimentos'
     | '/dashboard'
+    | '/manutencoes'
+    | '/secretarias'
+    | '/servidores'
     | '/veiculos'
     | '/viagens'
     | '/viagens/$id'
@@ -112,7 +155,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/abastecimentos'
     | '/dashboard'
+    | '/manutencoes'
+    | '/secretarias'
+    | '/servidores'
     | '/veiculos'
     | '/viagens/$id'
     | '/viagens/nova'
@@ -122,7 +169,11 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/abastecimentos'
     | '/_authenticated/dashboard'
+    | '/_authenticated/manutencoes'
+    | '/_authenticated/secretarias'
+    | '/_authenticated/servidores'
     | '/_authenticated/veiculos'
     | '/_authenticated/viagens'
     | '/_authenticated/viagens/$id'
@@ -173,11 +224,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVeiculosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/servidores': {
+      id: '/_authenticated/servidores'
+      path: '/servidores'
+      fullPath: '/servidores'
+      preLoaderRoute: typeof AuthenticatedServidoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/secretarias': {
+      id: '/_authenticated/secretarias'
+      path: '/secretarias'
+      fullPath: '/secretarias'
+      preLoaderRoute: typeof AuthenticatedSecretariasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/manutencoes': {
+      id: '/_authenticated/manutencoes'
+      path: '/manutencoes'
+      fullPath: '/manutencoes'
+      preLoaderRoute: typeof AuthenticatedManutencoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/abastecimentos': {
+      id: '/_authenticated/abastecimentos'
+      path: '/abastecimentos'
+      fullPath: '/abastecimentos'
+      preLoaderRoute: typeof AuthenticatedAbastecimentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/viagens/': {
@@ -220,13 +299,21 @@ const AuthenticatedViagensRouteWithChildren =
   AuthenticatedViagensRoute._addFileChildren(AuthenticatedViagensRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAbastecimentosRoute: typeof AuthenticatedAbastecimentosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedManutencoesRoute: typeof AuthenticatedManutencoesRoute
+  AuthenticatedSecretariasRoute: typeof AuthenticatedSecretariasRoute
+  AuthenticatedServidoresRoute: typeof AuthenticatedServidoresRoute
   AuthenticatedVeiculosRoute: typeof AuthenticatedVeiculosRoute
   AuthenticatedViagensRoute: typeof AuthenticatedViagensRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAbastecimentosRoute: AuthenticatedAbastecimentosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedManutencoesRoute: AuthenticatedManutencoesRoute,
+  AuthenticatedSecretariasRoute: AuthenticatedSecretariasRoute,
+  AuthenticatedServidoresRoute: AuthenticatedServidoresRoute,
   AuthenticatedVeiculosRoute: AuthenticatedVeiculosRoute,
   AuthenticatedViagensRoute: AuthenticatedViagensRouteWithChildren,
 }
@@ -242,13 +329,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

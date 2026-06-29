@@ -36,7 +36,7 @@ function ViagemDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("viagens")
-        .select("*, veiculos(placa,modelo,id,km_atual), secretarias(nome), profiles!viagens_motorista_profile_fkey(nome)")
+        .select("*, veiculos(placa,modelo,id,km_atual), secretarias(nome), profiles:motorista_id(nome)")
         .eq("id", id)
         .maybeSingle();
       return data;

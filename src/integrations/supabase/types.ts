@@ -14,6 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
+      abastecimentos: {
+        Row: {
+          created_at: string
+          cupom_url: string | null
+          data: string
+          id: string
+          km: number
+          litros: number
+          motorista_id: string | null
+          observacoes: string | null
+          posto: string | null
+          secretaria_id: string | null
+          tipo_combustivel: Database["public"]["Enums"]["tipo_combustivel"]
+          updated_at: string
+          valor_litro: number
+          valor_total: number
+          veiculo_id: string
+        }
+        Insert: {
+          created_at?: string
+          cupom_url?: string | null
+          data?: string
+          id?: string
+          km: number
+          litros: number
+          motorista_id?: string | null
+          observacoes?: string | null
+          posto?: string | null
+          secretaria_id?: string | null
+          tipo_combustivel: Database["public"]["Enums"]["tipo_combustivel"]
+          updated_at?: string
+          valor_litro: number
+          valor_total: number
+          veiculo_id: string
+        }
+        Update: {
+          created_at?: string
+          cupom_url?: string | null
+          data?: string
+          id?: string
+          km?: number
+          litros?: number
+          motorista_id?: string | null
+          observacoes?: string | null
+          posto?: string | null
+          secretaria_id?: string | null
+          tipo_combustivel?: Database["public"]["Enums"]["tipo_combustivel"]
+          updated_at?: string
+          valor_litro?: number
+          valor_total?: number
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "abastecimentos_secretaria_id_fkey"
+            columns: ["secretaria_id"]
+            isOneToOne: false
+            referencedRelation: "secretarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "abastecimentos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manutencoes: {
+        Row: {
+          anexo_url: string | null
+          created_at: string
+          custo: number | null
+          data_abertura: string
+          data_conclusao: string | null
+          descricao: string
+          id: string
+          km: number | null
+          observacoes: string | null
+          oficina: string | null
+          responsavel_id: string | null
+          status: Database["public"]["Enums"]["status_manutencao"]
+          tipo: Database["public"]["Enums"]["tipo_manutencao"]
+          updated_at: string
+          veiculo_id: string
+        }
+        Insert: {
+          anexo_url?: string | null
+          created_at?: string
+          custo?: number | null
+          data_abertura?: string
+          data_conclusao?: string | null
+          descricao: string
+          id?: string
+          km?: number | null
+          observacoes?: string | null
+          oficina?: string | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["status_manutencao"]
+          tipo: Database["public"]["Enums"]["tipo_manutencao"]
+          updated_at?: string
+          veiculo_id: string
+        }
+        Update: {
+          anexo_url?: string | null
+          created_at?: string
+          custo?: number | null
+          data_abertura?: string
+          data_conclusao?: string | null
+          descricao?: string
+          id?: string
+          km?: number | null
+          observacoes?: string | null
+          oficina?: string | null
+          responsavel_id?: string | null
+          status?: Database["public"]["Enums"]["status_manutencao"]
+          tipo?: Database["public"]["Enums"]["tipo_manutencao"]
+          updated_at?: string
+          veiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manutencoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -266,6 +397,15 @@ export type Database = {
     }
     Enums: {
       app_role: "administrador" | "gestor" | "motorista"
+      status_manutencao: "aberta" | "em_andamento" | "concluida" | "cancelada"
+      tipo_combustivel:
+        | "gasolina"
+        | "etanol"
+        | "diesel"
+        | "diesel_s10"
+        | "gnv"
+        | "flex"
+      tipo_manutencao: "preventiva" | "corretiva"
       veiculo_status: "disponivel" | "em_uso" | "em_manutencao"
       viagem_status: "em_andamento" | "finalizada" | "cancelada"
     }
@@ -396,6 +536,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["administrador", "gestor", "motorista"],
+      status_manutencao: ["aberta", "em_andamento", "concluida", "cancelada"],
+      tipo_combustivel: [
+        "gasolina",
+        "etanol",
+        "diesel",
+        "diesel_s10",
+        "gnv",
+        "flex",
+      ],
+      tipo_manutencao: ["preventiva", "corretiva"],
       veiculo_status: ["disponivel", "em_uso", "em_manutencao"],
       viagem_status: ["em_andamento", "finalizada", "cancelada"],
     },
