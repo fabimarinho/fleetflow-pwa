@@ -17,6 +17,8 @@ import { ArrowLeft, Camera } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { useProfile } from "@/hooks/useProfile";
+import { Checklist, type ChecklistState } from "@/components/frota/Checklist";
+import { SignaturePad, type SignaturePadHandle } from "@/components/frota/SignaturePad";
 
 export const Route = createFileRoute("/_authenticated/viagens/nova")({
   component: NovaViagem,
@@ -27,6 +29,8 @@ function NovaViagem() {
   const { data: me } = useProfile();
   const fileRef = useRef<HTMLInputElement>(null);
   const [foto, setFoto] = useState<File | null>(null);
+  const [checklist, setChecklist] = useState<ChecklistState>({});
+  const signRef = useRef<SignaturePadHandle>(null);
 
   const { data: veiculos } = useQuery({
     queryKey: ["veiculos-disponiveis"],
@@ -68,6 +72,18 @@ function NovaViagem() {
         if (up.error) throw up.error;
         foto_url = up.data.path;
       }
+      let assinatura_url: string | null = null;
+      if (signRef.current && !signRef.current.isEmpty()) {
+        const blob = await signRef.current.toBlob();
+        if (blob) {
+          const path = `assinaturas/${me.user.id}/${Date.now()}-saida.png`;
+          const up = await supabase.storage.from("frota").upload(path, blob, {
+            contentType: "image/png",
+          });
+          if (up.error) throw up.error;
+          assinatura_url = up.data.path;
+        }
+      }
       const { data, error } = await supabase
         .from("viagens")
         .insert({
@@ -82,6 +98,8 @@ function NovaViagem() {
           km_saida: Number(form.km_saida),
           hora_saida: new Date().toISOString(),
           foto_hodometro_saida_url: foto_url,
+          checklist_saida: checklist,
+          assinatura_url,
           status: "em_andamento",
         })
         .select("id")
@@ -178,6 +196,10 @@ function NovaViagem() {
               {foto ? foto.name.slice(0, 24) : "Tirar/anexar foto"}
             </Button>
           </div>
+        </div>
+        <div className="pt-2 border-t space-y-4">
+          <Checklist value={checklist} onChange={setChecklist} title="Check-list de saída" />
+          <SignaturePad ref={signRef} label="Assinatura do motorista (saída)" />
         </div>
       </Card>
 
