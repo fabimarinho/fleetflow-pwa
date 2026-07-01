@@ -35,7 +35,7 @@ const items = [
   { title: "Secretarias", url: "/secretarias", icon: Building2, disabled: false },
   { title: "Abastecimentos", url: "/abastecimentos", icon: Fuel, disabled: false },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench, disabled: false },
-  { title: "Relatórios", url: "#", icon: BarChart3, disabled: true },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3, disabled: false },
   { title: "Configurações", url: "#", icon: Settings, disabled: true },
 ];
 
