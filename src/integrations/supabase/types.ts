@@ -234,12 +234,16 @@ export type Database = {
           cor: string | null
           created_at: string
           id: string
+          ipva_ate: string | null
           km_atual: number
+          licenciamento_ate: string | null
           marca: string | null
           modelo: string
           observacoes: string | null
           placa: string
+          proximo_oleo_km: number | null
           secretaria_id: string | null
+          seguro_ate: string | null
           status: Database["public"]["Enums"]["veiculo_status"]
           tipo: string | null
           updated_at: string
@@ -249,12 +253,16 @@ export type Database = {
           cor?: string | null
           created_at?: string
           id?: string
+          ipva_ate?: string | null
           km_atual?: number
+          licenciamento_ate?: string | null
           marca?: string | null
           modelo: string
           observacoes?: string | null
           placa: string
+          proximo_oleo_km?: number | null
           secretaria_id?: string | null
+          seguro_ate?: string | null
           status?: Database["public"]["Enums"]["veiculo_status"]
           tipo?: string | null
           updated_at?: string
@@ -264,12 +272,16 @@ export type Database = {
           cor?: string | null
           created_at?: string
           id?: string
+          ipva_ate?: string | null
           km_atual?: number
+          licenciamento_ate?: string | null
           marca?: string | null
           modelo?: string
           observacoes?: string | null
           placa?: string
+          proximo_oleo_km?: number | null
           secretaria_id?: string | null
+          seguro_ate?: string | null
           status?: Database["public"]["Enums"]["veiculo_status"]
           tipo?: string | null
           updated_at?: string
@@ -286,7 +298,10 @@ export type Database = {
       }
       viagens: {
         Row: {
+          assinatura_retorno_url: string | null
           assinatura_url: string | null
+          checklist_retorno: Json | null
+          checklist_saida: Json | null
           combustivel: string | null
           created_at: string
           destino: string
@@ -310,7 +325,10 @@ export type Database = {
           veiculo_id: string
         }
         Insert: {
+          assinatura_retorno_url?: string | null
           assinatura_url?: string | null
+          checklist_retorno?: Json | null
+          checklist_saida?: Json | null
           combustivel?: string | null
           created_at?: string
           destino: string
@@ -334,7 +352,10 @@ export type Database = {
           veiculo_id: string
         }
         Update: {
+          assinatura_retorno_url?: string | null
           assinatura_url?: string | null
+          checklist_retorno?: Json | null
+          checklist_saida?: Json | null
           combustivel?: string | null
           created_at?: string
           destino?: string
