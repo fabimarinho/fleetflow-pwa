@@ -244,7 +244,7 @@ function Dashboard() {
                 <XAxis dataKey="mes" fontSize={12} />
                 <YAxis fontSize={12} />
                 <Tooltip formatter={(v: number) => `${v.toLocaleString("pt-BR")} km`} />
-                <Bar dataKey="km" fill="hsl(var(--brand-blue))" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="km" fill="var(--brand-blue)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -257,9 +257,9 @@ function Dashboard() {
               <PieChart>
                 <Pie
                   data={[
-                    { name: "Finalizadas", value: stats?.finalizadas ?? 0, color: "hsl(var(--brand-green))" },
-                    { name: "Em andamento", value: stats?.emAndamento ?? 0, color: "hsl(var(--brand-orange))" },
-                    { name: "Canceladas", value: stats?.canceladas ?? 0, color: "hsl(var(--muted-foreground))" },
+                    { name: "Finalizadas", value: stats?.finalizadas ?? 0, color: "var(--brand-green)" },
+                    { name: "Em andamento", value: stats?.emAndamento ?? 0, color: "var(--brand-orange)" },
+                    { name: "Canceladas", value: stats?.canceladas ?? 0, color: "var(--muted-foreground)" },
                   ]}
                   dataKey="value"
                   nameKey="name"
@@ -268,9 +268,9 @@ function Dashboard() {
                   paddingAngle={2}
                 >
                   {[
-                    "hsl(var(--brand-green))",
-                    "hsl(var(--brand-orange))",
-                    "hsl(var(--muted-foreground))",
+                    "var(--brand-green)",
+                    "var(--brand-orange)",
+                    "var(--muted-foreground)",
                   ].map((c, i) => (
                     <Cell key={i} fill={c} />
                   ))}
@@ -292,8 +292,8 @@ function Dashboard() {
                 <YAxis fontSize={12} />
                 <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
                 <Legend />
-                <Bar dataKey="abast" name="Abastecimento" stackId="c" fill="hsl(var(--brand-blue))" />
-                <Bar dataKey="manut" name="Manutenção" stackId="c" fill="hsl(var(--brand-orange))" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="abast" name="Abastecimento" stackId="c" fill="var(--brand-blue)" />
+                <Bar dataKey="manut" name="Manutenção" stackId="c" fill="var(--brand-orange)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
