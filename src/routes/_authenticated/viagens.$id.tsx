@@ -19,6 +19,8 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { format, differenceInMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Checklist, ChecklistSummary, type ChecklistState } from "@/components/frota/Checklist";
+import { SignaturePad, type SignaturePadHandle } from "@/components/frota/SignaturePad";
 
 export const Route = createFileRoute("/_authenticated/viagens/$id")({
   component: ViagemDetail,
@@ -30,6 +32,8 @@ function ViagemDetail() {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [foto, setFoto] = useState<File | null>(null);
+  const [checklist, setChecklist] = useState<ChecklistState>({});
+  const signRef = useRef<SignaturePadHandle>(null);
 
   const { data: v } = useQuery({
     queryKey: ["viagem", id],
@@ -61,6 +65,18 @@ function ViagemDetail() {
         if (up.error) throw up.error;
         foto_url = up.data.path;
       }
+      let assinatura_retorno_url: string | null = null;
+      if (signRef.current && !signRef.current.isEmpty()) {
+        const blob = await signRef.current.toBlob();
+        if (blob) {
+          const path = `assinaturas/${v.motorista_id}/${Date.now()}-retorno.png`;
+          const up = await supabase.storage.from("frota").upload(path, blob, {
+            contentType: "image/png",
+          });
+          if (up.error) throw up.error;
+          assinatura_retorno_url = up.data.path;
+        }
+      }
       const { error } = await supabase
         .from("viagens")
         .update({
@@ -68,6 +84,8 @@ function ViagemDetail() {
           combustivel: form.combustivel || null,
           ocorrencias: form.ocorrencias || null,
           foto_hodometro_retorno_url: foto_url,
+          checklist_retorno: checklist,
+          assinatura_retorno_url,
           hora_chegada: new Date().toISOString(),
           status: "finalizada",
         })
@@ -141,6 +159,22 @@ function ViagemDetail() {
           {v.objetivo && <InfoRow icon={MapPin} label="Objetivo" value={v.objetivo} />}
           {v.ocorrencias && <InfoRow icon={MapPin} label="Ocorrências" value={v.ocorrencias} />}
         </div>
+        {(v.checklist_saida || v.checklist_retorno) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
+            {v.checklist_saida && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Saída</p>
+                <ChecklistSummary value={v.checklist_saida as ChecklistState} />
+              </div>
+            )}
+            {v.checklist_retorno && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Retorno</p>
+                <ChecklistSummary value={v.checklist_retorno as ChecklistState} />
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       {isAndamento && (
@@ -176,6 +210,10 @@ function ViagemDetail() {
                 {foto ? foto.name.slice(0, 30) : "Tirar/anexar foto"}
               </Button>
             </div>
+          </div>
+          <div className="pt-2 border-t space-y-4">
+            <Checklist value={checklist} onChange={setChecklist} title="Check-list de retorno" />
+            <SignaturePad ref={signRef} label="Assinatura do motorista (retorno)" />
           </div>
           <div className="flex justify-end gap-3">
             <Button asChild variant="outline"><Link to="/viagens">Cancelar</Link></Button>
