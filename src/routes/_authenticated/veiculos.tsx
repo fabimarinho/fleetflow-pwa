@@ -67,6 +67,10 @@ function VeiculosPage() {
     km_atual: "0",
     secretaria_id: "",
     status: "disponivel" as "disponivel" | "em_uso" | "em_manutencao",
+    proximo_oleo_km: "",
+    licenciamento_ate: "",
+    ipva_ate: "",
+    seguro_ate: "",
   });
 
   const createMut = useMutation({
@@ -80,6 +84,10 @@ function VeiculosPage() {
         km_atual: Number(form.km_atual) || 0,
         secretaria_id: form.secretaria_id || null,
         status: form.status,
+        proximo_oleo_km: form.proximo_oleo_km ? Number(form.proximo_oleo_km) : null,
+        licenciamento_ate: form.licenciamento_ate || null,
+        ipva_ate: form.ipva_ate || null,
+        seguro_ate: form.seguro_ate || null,
       });
       if (error) throw error;
     },
@@ -87,7 +95,7 @@ function VeiculosPage() {
       toast.success("Veículo cadastrado");
       qc.invalidateQueries({ queryKey: ["veiculos"] });
       setOpen(false);
-      setForm({ placa: "", modelo: "", marca: "", ano: "", tipo: "", km_atual: "0", secretaria_id: "", status: "disponivel" });
+      setForm({ placa: "", modelo: "", marca: "", ano: "", tipo: "", km_atual: "0", secretaria_id: "", status: "disponivel", proximo_oleo_km: "", licenciamento_ate: "", ipva_ate: "", seguro_ate: "" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -156,6 +164,25 @@ function VeiculosPage() {
                       <SelectItem value="em_manutencao">Em manutenção</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="col-span-2 pt-2 border-t">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alertas e agenda</p>
+                </div>
+                <div className="space-y-1">
+                  <Label>Próxima troca óleo (km)</Label>
+                  <Input type="number" value={form.proximo_oleo_km} onChange={(e) => setForm({ ...form, proximo_oleo_km: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Licenciamento até</Label>
+                  <Input type="date" value={form.licenciamento_ate} onChange={(e) => setForm({ ...form, licenciamento_ate: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>IPVA até</Label>
+                  <Input type="date" value={form.ipva_ate} onChange={(e) => setForm({ ...form, ipva_ate: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Seguro até</Label>
+                  <Input type="date" value={form.seguro_ate} onChange={(e) => setForm({ ...form, seguro_ate: e.target.value })} />
                 </div>
               </div>
               <DialogFooter>
