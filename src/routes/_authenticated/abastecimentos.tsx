@@ -15,14 +15,24 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Fuel, Plus, Camera } from "lucide-react";
-import { useRef, useState } from "react";
+import { Fuel, Plus, Camera, Search, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -43,10 +53,13 @@ const COMBUSTIVEIS: { value: string; label: string }[] = [
 
 function AbastecimentosPage() {
   const { data: me } = useProfile();
+  const podeExcluir = me?.role === "administrador";
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [cupom, setCupom] = useState<File | null>(null);
+  const [busca, setBusca] = useState("");
+  const [excluir, setExcluir] = useState<{ id: string; label: string } | null>(null);
 
   const { data: rows } = useQuery({
     queryKey: ["abastecimentos"],
@@ -136,6 +149,33 @@ function AbastecimentosPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("abastecimentos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Abastecimento excluído");
+      qc.invalidateQueries({ queryKey: ["abastecimentos"] });
+      setExcluir(null);
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      setExcluir(null);
+    },
+  });
+
+  const filtrados = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    if (!q) return rows ?? [];
+    return (rows ?? []).filter((r: any) =>
+      r.veiculos?.placa?.toLowerCase().includes(q) ||
+      r.veiculos?.modelo?.toLowerCase().includes(q) ||
+      r.profiles?.nome?.toLowerCase().includes(q) ||
+      r.posto?.toLowerCase().includes(q)
+    );
+  }, [rows, busca]);
 
   return (
     <div className="space-y-6">
@@ -310,6 +350,19 @@ function AbastecimentosPage() {
         </Dialog>
       </div>
 
+      <Card className="p-3 flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por veículo, motorista ou posto"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <span className="text-xs text-muted-foreground ml-auto">{filtrados.length} de {(rows ?? []).length}</span>
+      </Card>
+
       {/* desktop */}
       <Card className="p-0 overflow-hidden hidden md:block">
         <table className="w-full text-sm">
@@ -323,10 +376,11 @@ function AbastecimentosPage() {
               <th className="text-right p-3">Litros</th>
               <th className="text-right p-3">R$/L</th>
               <th className="text-right p-3">Total</th>
+              {podeExcluir && <th className="p-3 w-10"></th>}
             </tr>
           </thead>
           <tbody>
-            {(rows ?? []).map((r: any) => (
+            {filtrados.map((r: any) => (
               <tr key={r.id} className="border-t hover:bg-muted/30">
                 <td className="p-3 whitespace-nowrap">
                   {format(new Date(r.data), "dd/MM/yy HH:mm", { locale: ptBR })}
@@ -351,12 +405,25 @@ function AbastecimentosPage() {
                 <td className="p-3 text-right font-semibold">
                   R$ {Number(r.valor_total).toFixed(2)}
                 </td>
+                {podeExcluir && (
+                  <td className="p-3 text-right">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => setExcluir({ id: r.id, label: `${r.veiculos?.placa} · ${format(new Date(r.data), "dd/MM/yy")}` })}
+                      aria-label="Excluir"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
+                )}
               </tr>
             ))}
-            {(rows ?? []).length === 0 && (
+            {filtrados.length === 0 && (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                  Nenhum abastecimento.
+                <td colSpan={podeExcluir ? 9 : 8} className="p-8 text-center text-muted-foreground">
+                  {(rows ?? []).length === 0 ? "Nenhum abastecimento." : "Nenhum resultado para essa busca."}
                 </td>
               </tr>
             )}
@@ -366,7 +433,7 @@ function AbastecimentosPage() {
 
       {/* mobile */}
       <div className="grid gap-3 md:hidden">
-        {(rows ?? []).map((r: any) => (
+        {filtrados.map((r: any) => (
           <Card key={r.id} className="p-4">
             <div className="flex items-start gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-green/10 text-brand-green">
@@ -388,10 +455,41 @@ function AbastecimentosPage() {
                   {Number(r.litros).toFixed(2)} L
                 </p>
               </div>
+              {podeExcluir && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  onClick={() => setExcluir({ id: r.id, label: `${r.veiculos?.placa} · ${format(new Date(r.data), "dd/MM/yy")}` })}
+                  aria-label="Excluir"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </Card>
         ))}
       </div>
+
+      <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir abastecimento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O registro <strong>{excluir?.label}</strong> será removido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => excluir && deleteMut.mutate(excluir.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
