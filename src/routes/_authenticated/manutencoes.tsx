@@ -22,8 +22,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Wrench, Plus } from "lucide-react";
-import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Wrench, Plus, Search, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -38,8 +48,12 @@ type Status = "aberta" | "em_andamento" | "concluida" | "cancelada";
 function ManutencoesPage() {
   const { data: me } = useProfile();
   const podeEditar = !!me?.isAdminOrGestor;
+  const podeExcluir = me?.role === "administrador";
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [excluir, setExcluir] = useState<{ id: string; label: string } | null>(null);
 
   const { data: rows } = useQuery({
     queryKey: ["manutencoes"],
@@ -106,6 +120,36 @@ function ManutencoesPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("manutencoes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Manutenção excluída");
+      qc.invalidateQueries({ queryKey: ["manutencoes"] });
+      setExcluir(null);
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      setExcluir(null);
+    },
+  });
+
+  const filtradas = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return (rows ?? []).filter((m: any) => {
+      if (filtroStatus !== "todos" && m.status !== filtroStatus) return false;
+      if (!q) return true;
+      return (
+        m.veiculos?.placa?.toLowerCase().includes(q) ||
+        m.veiculos?.modelo?.toLowerCase().includes(q) ||
+        m.descricao?.toLowerCase().includes(q) ||
+        m.oficina?.toLowerCase().includes(q)
+      );
+    });
+  }, [rows, busca, filtroStatus]);
 
   const statusMut = useMutation({
     mutationFn: async ({ id, status, veiculoId }: { id: string; status: Status; veiculoId: string }) => {
@@ -225,8 +269,31 @@ function ManutencoesPage() {
         )}
       </div>
 
+      <Card className="p-3 flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por veículo, descrição ou oficina"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+          <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os status</SelectItem>
+            <SelectItem value="aberta">Aberta</SelectItem>
+            <SelectItem value="em_andamento">Em andamento</SelectItem>
+            <SelectItem value="concluida">Concluída</SelectItem>
+            <SelectItem value="cancelada">Cancelada</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground ml-auto">{filtradas.length} de {(rows ?? []).length}</span>
+      </Card>
+
       <div className="grid gap-3">
-        {(rows ?? []).map((m: any) => (
+        {filtradas.map((m: any) => (
           <Card key={m.id} className="p-4">
             <div className="flex flex-wrap items-start gap-3">
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-brand-orange/10 text-brand-orange">
@@ -266,15 +333,46 @@ function ManutencoesPage() {
                   </SelectContent>
                 </Select>
               )}
+              {podeExcluir && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  onClick={() => setExcluir({ id: m.id, label: `${m.veiculos?.placa} · ${m.descricao?.slice(0, 40)}` })}
+                  aria-label="Excluir"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </Card>
         ))}
-        {(rows ?? []).length === 0 && (
+        {filtradas.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">
-            Nenhuma manutenção registrada.
+            {(rows ?? []).length === 0 ? "Nenhuma manutenção registrada." : "Nenhum resultado para esses filtros."}
           </Card>
         )}
       </div>
+
+      <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir manutenção?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O registro <strong>{excluir?.label}</strong> será removido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => excluir && deleteMut.mutate(excluir.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
