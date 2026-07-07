@@ -18,6 +18,7 @@ import { Route as AuthenticatedVeiculosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedServidoresRouteImport } from './routes/_authenticated/servidores'
 import { Route as AuthenticatedSecretariasRouteImport } from './routes/_authenticated/secretarias'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedManutencoesRouteImport } from './routes/_authenticated/manutencoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAbastecimentosRouteImport } from './routes/_authenticated/abastecimentos'
@@ -70,6 +71,11 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedManutencoesRoute =
   AuthenticatedManutencoesRouteImport.update({
     id: '/manutencoes',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/abastecimentos': typeof AuthenticatedAbastecimentosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/manutencoes': typeof AuthenticatedManutencoesRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/secretarias': typeof AuthenticatedSecretariasRoute
   '/servidores': typeof AuthenticatedServidoresRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/abastecimentos': typeof AuthenticatedAbastecimentosRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/manutencoes': typeof AuthenticatedManutencoesRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/secretarias': typeof AuthenticatedSecretariasRoute
   '/servidores': typeof AuthenticatedServidoresRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/_authenticated/abastecimentos': typeof AuthenticatedAbastecimentosRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/manutencoes': typeof AuthenticatedManutencoesRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/secretarias': typeof AuthenticatedSecretariasRoute
   '/_authenticated/servidores': typeof AuthenticatedServidoresRoute
@@ -163,6 +172,7 @@ export interface FileRouteTypes {
     | '/abastecimentos'
     | '/dashboard'
     | '/manutencoes'
+    | '/perfil'
     | '/relatorios'
     | '/secretarias'
     | '/servidores'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/abastecimentos'
     | '/dashboard'
     | '/manutencoes'
+    | '/perfil'
     | '/relatorios'
     | '/secretarias'
     | '/servidores'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/_authenticated/abastecimentos'
     | '/_authenticated/dashboard'
     | '/_authenticated/manutencoes'
+    | '/_authenticated/perfil'
     | '/_authenticated/relatorios'
     | '/_authenticated/secretarias'
     | '/_authenticated/servidores'
@@ -277,6 +289,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/manutencoes': {
       id: '/_authenticated/manutencoes'
       path: '/manutencoes'
@@ -341,6 +360,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAbastecimentosRoute: typeof AuthenticatedAbastecimentosRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedManutencoesRoute: typeof AuthenticatedManutencoesRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedSecretariasRoute: typeof AuthenticatedSecretariasRoute
   AuthenticatedServidoresRoute: typeof AuthenticatedServidoresRoute
@@ -352,6 +372,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAbastecimentosRoute: AuthenticatedAbastecimentosRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedManutencoesRoute: AuthenticatedManutencoesRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedSecretariasRoute: AuthenticatedSecretariasRoute,
   AuthenticatedServidoresRoute: AuthenticatedServidoresRoute,

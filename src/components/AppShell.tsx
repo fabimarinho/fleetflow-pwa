@@ -4,6 +4,7 @@ import { AppSidebar } from "./AppSidebar";
 import { useProfile } from "@/hooks/useProfile";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Toaster } from "@/components/ui/sonner";
+import { Link } from "@tanstack/react-router";
 
 function roleLabel(role?: string) {
   if (role === "administrador") return "Administrador";
@@ -29,7 +30,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <header className="sticky top-0 z-20 h-14 flex items-center gap-3 border-b bg-card px-3 sm:px-6">
             <SidebarTrigger />
             <div className="flex-1" />
-            <div className="flex items-center gap-3">
+            <Link
+              to="/perfil"
+              className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-muted transition-colors"
+              aria-label="Meu perfil"
+            >
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-medium leading-tight">{nome}</p>
                 <p className="text-xs text-muted-foreground leading-tight">
@@ -41,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {initials || "U"}
                 </AvatarFallback>
               </Avatar>
-            </div>
+            </Link>
           </header>
           <main className="flex-1 p-3 sm:p-6 max-w-full">{children}</main>
         </div>
