@@ -32,11 +32,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Fuel, Plus, Camera, Search, Trash2 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useDebounced } from "@/hooks/useDebounced";
+import { Pagination } from "@/components/Pagination";
 
 export const Route = createFileRoute("/_authenticated/abastecimentos")({
   component: AbastecimentosPage,
@@ -59,17 +61,26 @@ function AbastecimentosPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [cupom, setCupom] = useState<File | null>(null);
   const [busca, setBusca] = useState("");
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
+  const buscaDeb = useDebounced(busca, 300);
   const [excluir, setExcluir] = useState<{ id: string; label: string } | null>(null);
 
   const { data: rows } = useQuery({
-    queryKey: ["abastecimentos"],
+    queryKey: ["abastecimentos", { q: buscaDeb, page, pageSize }],
     queryFn: async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("abastecimentos")
-        .select("*, veiculos(placa,modelo), secretarias(nome), profiles:motorista_id(nome)")
-        .order("data", { ascending: false })
-        .limit(200);
-      return data ?? [];
+        .select("*, veiculos!inner(placa,modelo), secretarias(nome), profiles:motorista_id(nome)", { count: "exact" })
+        .order("data", { ascending: false });
+      const s = buscaDeb.trim();
+      if (s) {
+        const like = `%${s}%`;
+        q = q.or(`placa.ilike.${like},modelo.ilike.${like}`, { foreignTable: "veiculos" });
+      }
+      q = q.range(page * pageSize, page * pageSize + pageSize - 1);
+      const { data, count } = await q;
+      return { rows: data ?? [], total: count ?? 0 };
     },
   });
 
@@ -166,16 +177,8 @@ function AbastecimentosPage() {
     },
   });
 
-  const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    if (!q) return rows ?? [];
-    return (rows ?? []).filter((r: any) =>
-      r.veiculos?.placa?.toLowerCase().includes(q) ||
-      r.veiculos?.modelo?.toLowerCase().includes(q) ||
-      r.profiles?.nome?.toLowerCase().includes(q) ||
-      r.posto?.toLowerCase().includes(q)
-    );
-  }, [rows, busca]);
+  const filtrados = rows?.rows ?? [];
+  const total = rows?.total ?? 0;
 
   return (
     <div className="space-y-6">
