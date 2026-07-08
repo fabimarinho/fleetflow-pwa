@@ -106,7 +106,7 @@ function AbastecimentosPage() {
     observacoes: "",
   });
 
-  const total =
+  const totalCalc =
     Number(form.litros || 0) * Number(form.valor_litro || 0) || 0;
 
   const createMut = useMutation({
@@ -177,8 +177,8 @@ function AbastecimentosPage() {
     },
   });
 
-  const filtrados = rows?.rows ?? [];
-  const total = rows?.total ?? 0;
+  const filtrados = Array.isArray(rows) ? [] : (rows?.rows ?? []);
+  const total = Array.isArray(rows) ? 0 : (rows?.total ?? 0);
 
   return (
     <div className="space-y-6">
