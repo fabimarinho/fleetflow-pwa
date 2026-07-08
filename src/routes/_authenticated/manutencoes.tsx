@@ -33,11 +33,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Wrench, Plus, Search, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useDebounced } from "@/hooks/useDebounced";
+import { Pagination } from "@/components/Pagination";
 
 export const Route = createFileRoute("/_authenticated/manutencoes")({
   component: ManutencoesPage,
@@ -53,17 +55,27 @@ function ManutencoesPage() {
   const [open, setOpen] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
+  const buscaDeb = useDebounced(busca, 300);
   const [excluir, setExcluir] = useState<{ id: string; label: string } | null>(null);
 
   const { data: rows } = useQuery({
-    queryKey: ["manutencoes"],
+    queryKey: ["manutencoes", { q: buscaDeb, status: filtroStatus, page, pageSize }],
     queryFn: async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("manutencoes")
-        .select("*, veiculos(placa,modelo)")
-        .order("data_abertura", { ascending: false })
-        .limit(200);
-      return data ?? [];
+        .select("*, veiculos!inner(placa,modelo)", { count: "exact" })
+        .order("data_abertura", { ascending: false });
+      if (filtroStatus !== "todos") q = q.eq("status", filtroStatus as any);
+      const s = buscaDeb.trim();
+      if (s) {
+        const like = `%${s}%`;
+        q = q.or(`descricao.ilike.${like},oficina.ilike.${like}`);
+      }
+      q = q.range(page * pageSize, page * pageSize + pageSize - 1);
+      const { data, count } = await q;
+      return { rows: data ?? [], total: count ?? 0 };
     },
   });
 
@@ -137,19 +149,8 @@ function ManutencoesPage() {
     },
   });
 
-  const filtradas = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    return (rows ?? []).filter((m: any) => {
-      if (filtroStatus !== "todos" && m.status !== filtroStatus) return false;
-      if (!q) return true;
-      return (
-        m.veiculos?.placa?.toLowerCase().includes(q) ||
-        m.veiculos?.modelo?.toLowerCase().includes(q) ||
-        m.descricao?.toLowerCase().includes(q) ||
-        m.oficina?.toLowerCase().includes(q)
-      );
-    });
-  }, [rows, busca, filtroStatus]);
+  const filtradas = Array.isArray(rows) ? [] : (rows?.rows ?? []);
+  const total = Array.isArray(rows) ? 0 : (rows?.total ?? 0);
 
   const statusMut = useMutation({
     mutationFn: async ({ id, status, veiculoId }: { id: string; status: Status; veiculoId: string }) => {
@@ -275,11 +276,11 @@ function ManutencoesPage() {
           <Input
             placeholder="Buscar por veículo, descrição ou oficina"
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => { setBusca(e.target.value); setPage(0); }}
             className="pl-8"
           />
         </div>
-        <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+        <Select value={filtroStatus} onValueChange={(v) => { setFiltroStatus(v); setPage(0); }}>
           <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
@@ -289,7 +290,7 @@ function ManutencoesPage() {
             <SelectItem value="cancelada">Cancelada</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground ml-auto">{filtradas.length} de {(rows ?? []).length}</span>
+        <span className="text-xs text-muted-foreground ml-auto">{total} resultado(s)</span>
       </Card>
 
       <div className="grid gap-3">
@@ -349,10 +350,12 @@ function ManutencoesPage() {
         ))}
         {filtradas.length === 0 && (
           <Card className="p-8 text-center text-muted-foreground">
-            {(rows ?? []).length === 0 ? "Nenhuma manutenção registrada." : "Nenhum resultado para esses filtros."}
+            {total === 0 && !buscaDeb && filtroStatus === "todos" ? "Nenhuma manutenção registrada." : "Nenhum resultado para esses filtros."}
           </Card>
         )}
       </div>
+
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
         <AlertDialogContent>
