@@ -359,7 +359,7 @@ function AbastecimentosPage() {
           <Input
             placeholder="Buscar por veículo, motorista ou posto"
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => { setBusca(e.target.value); setPage(0); }}
             className="pl-8"
           />
         </div>
