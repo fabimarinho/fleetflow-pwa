@@ -23,8 +23,10 @@ import { Route as AuthenticatedManutencoesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAbastecimentosRouteImport } from './routes/_authenticated/abastecimentos'
 import { Route as AuthenticatedViagensIndexRouteImport } from './routes/_authenticated/viagens.index'
+import { Route as AuthenticatedVeiculosIndexRouteImport } from './routes/_authenticated/veiculos.index'
 import { Route as AuthenticatedViagensNovaRouteImport } from './routes/_authenticated/viagens.nova'
 import { Route as AuthenticatedViagensIdRouteImport } from './routes/_authenticated/viagens.$id'
+import { Route as AuthenticatedVeiculosIdRouteImport } from './routes/_authenticated/veiculos.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -99,6 +101,12 @@ const AuthenticatedViagensIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedViagensRoute,
   } as any)
+const AuthenticatedVeiculosIndexRoute =
+  AuthenticatedVeiculosIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedVeiculosRoute,
+  } as any)
 const AuthenticatedViagensNovaRoute =
   AuthenticatedViagensNovaRouteImport.update({
     id: '/nova',
@@ -109,6 +117,11 @@ const AuthenticatedViagensIdRoute = AuthenticatedViagensIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => AuthenticatedViagensRoute,
+} as any)
+const AuthenticatedVeiculosIdRoute = AuthenticatedVeiculosIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedVeiculosRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -122,10 +135,12 @@ export interface FileRoutesByFullPath {
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/secretarias': typeof AuthenticatedSecretariasRoute
   '/servidores': typeof AuthenticatedServidoresRoute
-  '/veiculos': typeof AuthenticatedVeiculosRoute
+  '/veiculos': typeof AuthenticatedVeiculosRouteWithChildren
   '/viagens': typeof AuthenticatedViagensRouteWithChildren
+  '/veiculos/$id': typeof AuthenticatedVeiculosIdRoute
   '/viagens/$id': typeof AuthenticatedViagensIdRoute
   '/viagens/nova': typeof AuthenticatedViagensNovaRoute
+  '/veiculos/': typeof AuthenticatedVeiculosIndexRoute
   '/viagens/': typeof AuthenticatedViagensIndexRoute
 }
 export interface FileRoutesByTo {
@@ -139,9 +154,10 @@ export interface FileRoutesByTo {
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/secretarias': typeof AuthenticatedSecretariasRoute
   '/servidores': typeof AuthenticatedServidoresRoute
-  '/veiculos': typeof AuthenticatedVeiculosRoute
+  '/veiculos/$id': typeof AuthenticatedVeiculosIdRoute
   '/viagens/$id': typeof AuthenticatedViagensIdRoute
   '/viagens/nova': typeof AuthenticatedViagensNovaRoute
+  '/veiculos': typeof AuthenticatedVeiculosIndexRoute
   '/viagens': typeof AuthenticatedViagensIndexRoute
 }
 export interface FileRoutesById {
@@ -157,10 +173,12 @@ export interface FileRoutesById {
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/secretarias': typeof AuthenticatedSecretariasRoute
   '/_authenticated/servidores': typeof AuthenticatedServidoresRoute
-  '/_authenticated/veiculos': typeof AuthenticatedVeiculosRoute
+  '/_authenticated/veiculos': typeof AuthenticatedVeiculosRouteWithChildren
   '/_authenticated/viagens': typeof AuthenticatedViagensRouteWithChildren
+  '/_authenticated/veiculos/$id': typeof AuthenticatedVeiculosIdRoute
   '/_authenticated/viagens/$id': typeof AuthenticatedViagensIdRoute
   '/_authenticated/viagens/nova': typeof AuthenticatedViagensNovaRoute
+  '/_authenticated/veiculos/': typeof AuthenticatedVeiculosIndexRoute
   '/_authenticated/viagens/': typeof AuthenticatedViagensIndexRoute
 }
 export interface FileRouteTypes {
@@ -178,8 +196,10 @@ export interface FileRouteTypes {
     | '/servidores'
     | '/veiculos'
     | '/viagens'
+    | '/veiculos/$id'
     | '/viagens/$id'
     | '/viagens/nova'
+    | '/veiculos/'
     | '/viagens/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -193,9 +213,10 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/secretarias'
     | '/servidores'
-    | '/veiculos'
+    | '/veiculos/$id'
     | '/viagens/$id'
     | '/viagens/nova'
+    | '/veiculos'
     | '/viagens'
   id:
     | '__root__'
@@ -212,8 +233,10 @@ export interface FileRouteTypes {
     | '/_authenticated/servidores'
     | '/_authenticated/veiculos'
     | '/_authenticated/viagens'
+    | '/_authenticated/veiculos/$id'
     | '/_authenticated/viagens/$id'
     | '/_authenticated/viagens/nova'
+    | '/_authenticated/veiculos/'
     | '/_authenticated/viagens/'
   fileRoutesById: FileRoutesById
 }
@@ -324,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedViagensIndexRouteImport
       parentRoute: typeof AuthenticatedViagensRoute
     }
+    '/_authenticated/veiculos/': {
+      id: '/_authenticated/veiculos/'
+      path: '/'
+      fullPath: '/veiculos/'
+      preLoaderRoute: typeof AuthenticatedVeiculosIndexRouteImport
+      parentRoute: typeof AuthenticatedVeiculosRoute
+    }
     '/_authenticated/viagens/nova': {
       id: '/_authenticated/viagens/nova'
       path: '/nova'
@@ -338,8 +368,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedViagensIdRouteImport
       parentRoute: typeof AuthenticatedViagensRoute
     }
+    '/_authenticated/veiculos/$id': {
+      id: '/_authenticated/veiculos/$id'
+      path: '/$id'
+      fullPath: '/veiculos/$id'
+      preLoaderRoute: typeof AuthenticatedVeiculosIdRouteImport
+      parentRoute: typeof AuthenticatedVeiculosRoute
+    }
   }
 }
+
+interface AuthenticatedVeiculosRouteChildren {
+  AuthenticatedVeiculosIdRoute: typeof AuthenticatedVeiculosIdRoute
+  AuthenticatedVeiculosIndexRoute: typeof AuthenticatedVeiculosIndexRoute
+}
+
+const AuthenticatedVeiculosRouteChildren: AuthenticatedVeiculosRouteChildren = {
+  AuthenticatedVeiculosIdRoute: AuthenticatedVeiculosIdRoute,
+  AuthenticatedVeiculosIndexRoute: AuthenticatedVeiculosIndexRoute,
+}
+
+const AuthenticatedVeiculosRouteWithChildren =
+  AuthenticatedVeiculosRoute._addFileChildren(
+    AuthenticatedVeiculosRouteChildren,
+  )
 
 interface AuthenticatedViagensRouteChildren {
   AuthenticatedViagensIdRoute: typeof AuthenticatedViagensIdRoute
@@ -364,7 +416,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedSecretariasRoute: typeof AuthenticatedSecretariasRoute
   AuthenticatedServidoresRoute: typeof AuthenticatedServidoresRoute
-  AuthenticatedVeiculosRoute: typeof AuthenticatedVeiculosRoute
+  AuthenticatedVeiculosRoute: typeof AuthenticatedVeiculosRouteWithChildren
   AuthenticatedViagensRoute: typeof AuthenticatedViagensRouteWithChildren
 }
 
@@ -376,7 +428,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedSecretariasRoute: AuthenticatedSecretariasRoute,
   AuthenticatedServidoresRoute: AuthenticatedServidoresRoute,
-  AuthenticatedVeiculosRoute: AuthenticatedVeiculosRoute,
+  AuthenticatedVeiculosRoute: AuthenticatedVeiculosRouteWithChildren,
   AuthenticatedViagensRoute: AuthenticatedViagensRouteWithChildren,
 }
 

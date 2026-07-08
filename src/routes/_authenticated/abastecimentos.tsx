@@ -32,11 +32,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Fuel, Plus, Camera, Search, Trash2 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useDebounced } from "@/hooks/useDebounced";
+import { Pagination } from "@/components/Pagination";
 
 export const Route = createFileRoute("/_authenticated/abastecimentos")({
   component: AbastecimentosPage,
@@ -59,17 +61,26 @@ function AbastecimentosPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [cupom, setCupom] = useState<File | null>(null);
   const [busca, setBusca] = useState("");
+  const [page, setPage] = useState(0);
+  const pageSize = 20;
+  const buscaDeb = useDebounced(busca, 300);
   const [excluir, setExcluir] = useState<{ id: string; label: string } | null>(null);
 
   const { data: rows } = useQuery({
-    queryKey: ["abastecimentos"],
+    queryKey: ["abastecimentos", { q: buscaDeb, page, pageSize }],
     queryFn: async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("abastecimentos")
-        .select("*, veiculos(placa,modelo), secretarias(nome), profiles:motorista_id(nome)")
-        .order("data", { ascending: false })
-        .limit(200);
-      return data ?? [];
+        .select("*, veiculos!inner(placa,modelo), secretarias(nome), profiles:motorista_id(nome)", { count: "exact" })
+        .order("data", { ascending: false });
+      const s = buscaDeb.trim();
+      if (s) {
+        const like = `%${s}%`;
+        q = q.or(`placa.ilike.${like},modelo.ilike.${like}`, { foreignTable: "veiculos" });
+      }
+      q = q.range(page * pageSize, page * pageSize + pageSize - 1);
+      const { data, count } = await q;
+      return { rows: data ?? [], total: count ?? 0 };
     },
   });
 
@@ -95,7 +106,7 @@ function AbastecimentosPage() {
     observacoes: "",
   });
 
-  const total =
+  const totalCalc =
     Number(form.litros || 0) * Number(form.valor_litro || 0) || 0;
 
   const createMut = useMutation({
@@ -116,7 +127,7 @@ function AbastecimentosPage() {
         km: Number(form.km),
         litros: Number(form.litros),
         valor_litro: Number(form.valor_litro),
-        valor_total: total,
+        valor_total: totalCalc,
         posto: form.posto || null,
         observacoes: form.observacoes || null,
         cupom_url,
@@ -166,16 +177,8 @@ function AbastecimentosPage() {
     },
   });
 
-  const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    if (!q) return rows ?? [];
-    return (rows ?? []).filter((r: any) =>
-      r.veiculos?.placa?.toLowerCase().includes(q) ||
-      r.veiculos?.modelo?.toLowerCase().includes(q) ||
-      r.profiles?.nome?.toLowerCase().includes(q) ||
-      r.posto?.toLowerCase().includes(q)
-    );
-  }, [rows, busca]);
+  const filtrados = Array.isArray(rows) ? [] : (rows?.rows ?? []);
+  const total = Array.isArray(rows) ? 0 : (rows?.total ?? 0);
 
   return (
     <div className="space-y-6">
@@ -270,7 +273,7 @@ function AbastecimentosPage() {
               </div>
               <div className="col-span-2 space-y-1">
                 <Label>Total</Label>
-                <Input disabled value={`R$ ${total.toFixed(2)}`} />
+                <Input disabled value={`R$ ${totalCalc.toFixed(2)}`} />
               </div>
               <div className="col-span-2 space-y-1">
                 <Label>Posto</Label>
@@ -356,11 +359,11 @@ function AbastecimentosPage() {
           <Input
             placeholder="Buscar por veículo, motorista ou posto"
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => { setBusca(e.target.value); setPage(0); }}
             className="pl-8"
           />
         </div>
-        <span className="text-xs text-muted-foreground ml-auto">{filtrados.length} de {(rows ?? []).length}</span>
+        <span className="text-xs text-muted-foreground ml-auto">{total} resultado(s)</span>
       </Card>
 
       {/* desktop */}
@@ -423,7 +426,7 @@ function AbastecimentosPage() {
             {filtrados.length === 0 && (
               <tr>
                 <td colSpan={podeExcluir ? 9 : 8} className="p-8 text-center text-muted-foreground">
-                  {(rows ?? []).length === 0 ? "Nenhum abastecimento." : "Nenhum resultado para essa busca."}
+                  {total === 0 && !buscaDeb ? "Nenhum abastecimento." : "Nenhum resultado para essa busca."}
                 </td>
               </tr>
             )}
@@ -470,6 +473,8 @@ function AbastecimentosPage() {
           </Card>
         ))}
       </div>
+
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
         <AlertDialogContent>
