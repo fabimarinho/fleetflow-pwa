@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Car, Plus, Wrench, Search, Pencil, Trash2 } from "lucide-react";
+import { Car, Plus, Wrench, Search, Pencil, Trash2, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
