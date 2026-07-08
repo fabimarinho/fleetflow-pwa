@@ -37,7 +37,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { z } from "zod";
 
-export const Route = createFileRoute("/_authenticated/veiculos")({
+export const Route = createFileRoute("/_authenticated/veiculos/")({
   component: VeiculosPage,
 });
 
