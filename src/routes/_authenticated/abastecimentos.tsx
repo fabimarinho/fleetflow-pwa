@@ -474,6 +474,8 @@ function AbastecimentosPage() {
         ))}
       </div>
 
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
+
       <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
