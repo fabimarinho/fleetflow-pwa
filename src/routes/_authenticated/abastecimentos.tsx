@@ -127,7 +127,7 @@ function AbastecimentosPage() {
         km: Number(form.km),
         litros: Number(form.litros),
         valor_litro: Number(form.valor_litro),
-        valor_total: total,
+        valor_total: totalCalc,
         posto: form.posto || null,
         observacoes: form.observacoes || null,
         cupom_url,
@@ -273,7 +273,7 @@ function AbastecimentosPage() {
               </div>
               <div className="col-span-2 space-y-1">
                 <Label>Total</Label>
-                <Input disabled value={`R$ ${total.toFixed(2)}`} />
+                <Input disabled value={`R$ ${totalCalc.toFixed(2)}`} />
               </div>
               <div className="col-span-2 space-y-1">
                 <Label>Posto</Label>
@@ -363,7 +363,7 @@ function AbastecimentosPage() {
             className="pl-8"
           />
         </div>
-        <span className="text-xs text-muted-foreground ml-auto">{filtrados.length} de {(rows ?? []).length}</span>
+        <span className="text-xs text-muted-foreground ml-auto">{total} resultado(s)</span>
       </Card>
 
       {/* desktop */}
@@ -426,7 +426,7 @@ function AbastecimentosPage() {
             {filtrados.length === 0 && (
               <tr>
                 <td colSpan={podeExcluir ? 9 : 8} className="p-8 text-center text-muted-foreground">
-                  {(rows ?? []).length === 0 ? "Nenhum abastecimento." : "Nenhum resultado para essa busca."}
+                  {total === 0 && !buscaDeb ? "Nenhum abastecimento." : "Nenhum resultado para essa busca."}
                 </td>
               </tr>
             )}
