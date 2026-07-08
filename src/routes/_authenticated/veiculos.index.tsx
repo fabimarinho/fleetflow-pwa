@@ -32,10 +32,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Car, Plus, Wrench, Search, Pencil, Trash2, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useDebounced } from "@/hooks/useDebounced";
+import { Pagination } from "@/components/Pagination";
 
 export const Route = createFileRoute("/_authenticated/veiculos/")({
   component: VeiculosPage,
@@ -78,16 +80,27 @@ function VeiculosPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [page, setPage] = useState(0);
+  const pageSize = 12;
+  const buscaDeb = useDebounced(busca, 300);
   const [excluir, setExcluir] = useState<{ id: string; label: string } | null>(null);
 
   const { data: veiculos } = useQuery({
-    queryKey: ["veiculos"],
+    queryKey: ["veiculos", { q: buscaDeb, status: filtroStatus, page, pageSize }],
     queryFn: async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("veiculos")
-        .select("*, secretarias(nome)")
+        .select("*, secretarias(nome)", { count: "exact" })
         .order("modelo");
-      return data ?? [];
+      if (filtroStatus !== "todos") q = q.eq("status", filtroStatus as any);
+      const s = buscaDeb.trim();
+      if (s) {
+        const like = `%${s}%`;
+        q = q.or(`placa.ilike.${like},modelo.ilike.${like},marca.ilike.${like}`);
+      }
+      q = q.range(page * pageSize, page * pageSize + pageSize - 1);
+      const { data, count } = await q;
+      return { rows: data ?? [], total: count ?? 0 };
     },
   });
 
@@ -175,18 +188,8 @@ function VeiculosPage() {
     },
   });
 
-  const filtrados = useMemo(() => {
-    const q = busca.trim().toLowerCase();
-    return (veiculos ?? []).filter((v: any) => {
-      if (filtroStatus !== "todos" && v.status !== filtroStatus) return false;
-      if (!q) return true;
-      return (
-        v.placa?.toLowerCase().includes(q) ||
-        v.modelo?.toLowerCase().includes(q) ||
-        v.marca?.toLowerCase().includes(q)
-      );
-    });
-  }, [veiculos, busca, filtroStatus]);
+  const filtrados = veiculos?.rows ?? [];
+  const total = veiculos?.total ?? 0;
 
   return (
     <div className="space-y-6">
@@ -290,11 +293,11 @@ function VeiculosPage() {
           <Input
             placeholder="Buscar por placa, modelo ou marca"
             value={busca}
-            onChange={(e) => setBusca(e.target.value)}
+            onChange={(e) => { setBusca(e.target.value); setPage(0); }}
             className="pl-8"
           />
         </div>
-        <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+        <Select value={filtroStatus} onValueChange={(v) => { setFiltroStatus(v); setPage(0); }}>
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
@@ -303,7 +306,7 @@ function VeiculosPage() {
             <SelectItem value="em_manutencao">Em manutenção</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-xs text-muted-foreground ml-auto">{filtrados.length} de {(veiculos ?? []).length}</span>
+        <span className="text-xs text-muted-foreground ml-auto">{total} resultado(s)</span>
       </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -317,11 +320,14 @@ function VeiculosPage() {
               }`}>
                 {v.status === "em_manutencao" ? <Wrench className="h-6 w-6" /> : <Car className="h-6 w-6" />}
               </div>
-              <div className="min-w-0 flex-1">
+              <Link to="/veiculos/$id" params={{ id: v.id }} className="min-w-0 flex-1 group">
                 <h3 className="font-semibold truncate">{v.modelo}</h3>
                 <p className="text-xs text-muted-foreground">{v.marca} {v.ano ? `· ${v.ano}` : ""}</p>
-                <p className="font-mono text-sm mt-1">{v.placa}</p>
-              </div>
+                <p className="font-mono text-sm mt-1 inline-flex items-center gap-1">
+                  {v.placa}
+                  <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+                </p>
+              </Link>
               {podeEditar && (
                 <div className="flex flex-col gap-1">
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => abrirEdicao(v)} aria-label="Editar">
@@ -346,12 +352,14 @@ function VeiculosPage() {
         ))}
         {filtrados.length === 0 && (
           <Card className="p-8 col-span-full text-center text-muted-foreground">
-            {(veiculos ?? []).length === 0
+            {total === 0 && !buscaDeb && filtroStatus === "todos"
               ? `Nenhum veículo cadastrado${podeEditar ? " ainda. Clique em \"Novo veículo\" para começar." : "."}`
               : "Nenhum veículo encontrado com esses filtros."}
           </Card>
         )}
       </div>
+
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
         <AlertDialogContent>
