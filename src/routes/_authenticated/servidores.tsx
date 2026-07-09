@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, ShieldCheck, ShieldAlert, Car } from "lucide-react";
+import { Users, ShieldCheck, ShieldAlert, Car, Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
+import { criarServidor, excluirServidor } from "@/lib/servidores.functions";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 
@@ -25,6 +50,19 @@ function ServidoresPage() {
   const { data: me } = useProfile();
   const isAdmin = me?.role === "administrador";
   const qc = useQueryClient();
+  const criarFn = useServerFn(criarServidor);
+  const excluirFn = useServerFn(excluirServidor);
+  const [open, setOpen] = useState(false);
+  const emptyForm = {
+    nome: "",
+    email: "",
+    senha: "",
+    telefone: "",
+    matricula: "",
+    secretaria_id: "",
+    role: "motorista" as Role,
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const { data: rows } = useQuery({
     queryKey: ["servidores"],
@@ -89,13 +127,157 @@ function ServidoresPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const createMut = useMutation({
+    mutationFn: async () => {
+      await criarFn({
+        data: {
+          nome: form.nome,
+          email: form.email,
+          senha: form.senha,
+          telefone: form.telefone,
+          matricula: form.matricula,
+          secretaria_id: form.secretaria_id,
+          role: form.role,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Servidor cadastrado");
+      qc.invalidateQueries({ queryKey: ["servidores"] });
+      setForm(emptyForm);
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      await excluirFn({ data: { id } });
+    },
+    onSuccess: () => {
+      toast.success("Servidor excluído");
+      qc.invalidateQueries({ queryKey: ["servidores"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Servidores</h1>
-        <p className="text-sm text-muted-foreground">
-          Usuários cadastrados e suas permissões
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Servidores</h1>
+          <p className="text-sm text-muted-foreground">
+            Usuários cadastrados e suas permissões
+          </p>
+        </div>
+        {isAdmin && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Novo servidor
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Cadastrar servidor</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Nome *</Label>
+                  <Input
+                    value={form.nome}
+                    onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                    placeholder="Nome completo"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>E-mail *</Label>
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="servidor@prefeitura.gov"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Senha temporária *</Label>
+                  <Input
+                    type="text"
+                    value={form.senha}
+                    onChange={(e) => setForm({ ...form, senha: e.target.value })}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Matrícula</Label>
+                  <Input
+                    value={form.matricula}
+                    onChange={(e) => setForm({ ...form, matricula: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Telefone</Label>
+                  <Input
+                    value={form.telefone}
+                    onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Secretaria</Label>
+                  <Select
+                    value={form.secretaria_id}
+                    onValueChange={(v) => setForm({ ...form, secretaria_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(secretarias ?? []).map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Permissão *</Label>
+                  <Select
+                    value={form.role}
+                    onValueChange={(v: Role) => setForm({ ...form, role: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROLES.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {labelRole(r)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  disabled={
+                    !form.nome ||
+                    !form.email ||
+                    form.senha.length < 6 ||
+                    createMut.isPending
+                  }
+                  onClick={() => createMut.mutate()}
+                >
+                  {createMut.isPending ? "Salvando..." : "Cadastrar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <Card className="p-0 overflow-hidden hidden md:block">
@@ -107,6 +289,7 @@ function ServidoresPage() {
               <th className="text-left p-3">Telefone</th>
               <th className="text-left p-3">Secretaria</th>
               <th className="text-left p-3">Permissão</th>
+              {isAdmin && <th className="text-right p-3">Ações</th>}
             </tr>
           </thead>
           <tbody>
@@ -161,11 +344,38 @@ function ServidoresPage() {
                     <RoleBadge role={u.role} />
                   )}
                 </td>
+                {isAdmin && (
+                  <td className="p-3 text-right">
+                    {u.id !== me?.user?.id && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir servidor?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação remove definitivamente <b>{u.nome ?? "este usuário"}</b> do sistema.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteMut.mutate(u.id)}>
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
             {(rows ?? []).length === 0 && (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                <td colSpan={isAdmin ? 6 : 5} className="p-8 text-center text-muted-foreground">
                   Nenhum servidor cadastrado.
                 </td>
               </tr>
