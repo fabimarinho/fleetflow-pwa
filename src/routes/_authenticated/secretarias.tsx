@@ -103,13 +103,20 @@ function SecretariasPage() {
               <DialogHeader>
                 <DialogTitle>{editing ? "Editar" : "Cadastrar"} secretaria</DialogTitle>
               </DialogHeader>
-              <div className="space-y-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (form.nome && !saveMut.isPending) saveMut.mutate();
+                }}
+                className="space-y-3"
+              >
                 <div className="space-y-1">
                   <Label>Nome *</Label>
                   <Input
                     value={form.nome}
                     onChange={(e) => setForm({ ...form, nome: e.target.value })}
                     placeholder="Secretaria de Saúde"
+                    autoFocus
                   />
                 </div>
                 <div className="space-y-1">
@@ -120,18 +127,18 @@ function SecretariasPage() {
                     placeholder="SMS"
                   />
                 </div>
-              </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancelar
                 </Button>
                 <Button
+                  type="submit"
                   disabled={!form.nome || saveMut.isPending}
-                  onClick={() => saveMut.mutate()}
                 >
                   Salvar
                 </Button>
               </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         )}
