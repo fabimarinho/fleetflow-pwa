@@ -181,6 +181,19 @@ function ServidoresPage() {
               <DialogHeader>
                 <DialogTitle>Cadastrar servidor</DialogTitle>
               </DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (
+                    form.nome &&
+                    form.email &&
+                    form.senha.length >= 6 &&
+                    !createMut.isPending
+                  ) {
+                    createMut.mutate();
+                  }
+                }}
+              >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1 sm:col-span-2">
                   <Label>Nome *</Label>
@@ -260,21 +273,22 @@ function ServidoresPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancelar
                 </Button>
                 <Button
+                  type="submit"
                   disabled={
                     !form.nome ||
                     !form.email ||
                     form.senha.length < 6 ||
                     createMut.isPending
                   }
-                  onClick={() => createMut.mutate()}
                 >
                   {createMut.isPending ? "Salvando..." : "Cadastrar"}
                 </Button>
               </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         )}
