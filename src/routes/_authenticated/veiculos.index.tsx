@@ -209,6 +209,12 @@ function VeiculosPage() {
               <DialogHeader>
                 <DialogTitle>{editId ? "Editar veículo" : "Cadastrar veículo"}</DialogTitle>
               </DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (form.placa && form.modelo && !saveMut.isPending) saveMut.mutate();
+                }}
+              >
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 sm:col-span-1 space-y-1">
                   <Label>Placa *</Label>
@@ -277,11 +283,12 @@ function VeiculosPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button disabled={!form.placa || !form.modelo || saveMut.isPending} onClick={() => saveMut.mutate()}>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={!form.placa || !form.modelo || saveMut.isPending}>
                   Salvar
                 </Button>
               </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         )}
