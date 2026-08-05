@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -31,11 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Car, Plus, Wrench, Search, Pencil, Trash2, ChevronRight } from "lucide-react";
+import { Car, ChevronRight, Pencil, Plus, Search, Trash2, Wrench } from "lucide-react";
 import { useState } from "react";
-import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useProfile } from "@/hooks/useProfile";
 import { useDebounced } from "@/hooks/useDebounced";
 import { Pagination } from "@/components/Pagination";
 
@@ -44,9 +44,9 @@ export const Route = createFileRoute("/_authenticated/veiculos/")({
 });
 
 const STATUS_LABEL: Record<string, string> = {
-  disponivel: "Disponível",
+  disponivel: "Disponivel",
   em_uso: "Em uso",
-  em_manutencao: "Em manutenção",
+  em_manutencao: "Em manutencao",
 };
 
 const emptyForm = {
@@ -65,41 +65,45 @@ const emptyForm = {
 };
 
 const veiculoSchema = z.object({
-  placa: z.string().trim().min(5, "Placa inválida").max(10, "Placa inválida"),
+  placa: z.string().trim().min(5, "Placa invalida").max(10, "Placa invalida"),
   modelo: z.string().trim().min(1, "Informe o modelo").max(80),
-  ano: z.string().refine((v) => v === "" || (Number(v) >= 1900 && Number(v) <= new Date().getFullYear() + 1), "Ano inválido"),
-  km_atual: z.string().refine((v) => !isNaN(Number(v)) && Number(v) >= 0, "Km inválido"),
+  ano: z.string().refine(
+    (value) => value === "" || (Number(value) >= 1900 && Number(value) <= new Date().getFullYear() + 1),
+    "Ano invalido",
+  ),
+  km_atual: z.string().refine((value) => !isNaN(Number(value)) && Number(value) >= 0, "Km invalido"),
 });
 
 function VeiculosPage() {
   const { data: me } = useProfile();
-  const podeEditar = !!me?.isAdminOrGestor;
+  const podeEditar = !!me?.isAdmin;
   const podeExcluir = me?.role === "administrador";
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState<string>("todos");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
   const [page, setPage] = useState(0);
+  const [form, setForm] = useState(emptyForm);
+  const [excluir, setExcluir] = useState<{ id: string; label: string } | null>(null);
   const pageSize = 12;
   const buscaDeb = useDebounced(busca, 300);
-  const [excluir, setExcluir] = useState<{ id: string; label: string } | null>(null);
 
   const { data: veiculos } = useQuery({
     queryKey: ["veiculos", { q: buscaDeb, status: filtroStatus, page, pageSize }],
     queryFn: async () => {
-      let q = supabase
+      let query = supabase
         .from("veiculos")
         .select("*, secretarias(nome)", { count: "exact" })
         .order("modelo");
-      if (filtroStatus !== "todos") q = q.eq("status", filtroStatus as any);
-      const s = buscaDeb.trim();
-      if (s) {
-        const like = `%${s}%`;
-        q = q.or(`placa.ilike.${like},modelo.ilike.${like},marca.ilike.${like}`);
+      if (filtroStatus !== "todos") query = query.eq("status", filtroStatus as any);
+      const term = buscaDeb.trim();
+      if (term) {
+        const like = `%${term}%`;
+        query = query.or(`placa.ilike.${like},modelo.ilike.${like},marca.ilike.${like}`);
       }
-      q = q.range(page * pageSize, page * pageSize + pageSize - 1);
-      const { data, count } = await q;
+      query = query.range(page * pageSize, page * pageSize + pageSize - 1);
+      const { data, count } = await query;
       return { rows: data ?? [], total: count ?? 0 };
     },
   });
@@ -109,7 +113,19 @@ function VeiculosPage() {
     queryFn: async () => (await supabase.from("secretarias").select("*").order("nome")).data ?? [],
   });
 
-  const [form, setForm] = useState(emptyForm);
+  const veiculoTeste = {
+    id: "demo-veiculo",
+    placa: "ABC-1234",
+    modelo: "Fiat Strada",
+    marca: "Fiat",
+    ano: 2024,
+    tipo: "Pickup",
+    km_atual: 12500,
+    secretaria_id: null,
+    status: "disponivel",
+    secretarias: { nome: "Cadastro de teste" },
+    isDemo: true,
+  };
 
   function abrirNovo() {
     setEditId(null);
@@ -117,21 +133,34 @@ function VeiculosPage() {
     setOpen(true);
   }
 
-  function abrirEdicao(v: any) {
-    setEditId(v.id);
+  function preencherTeste() {
     setForm({
-      placa: v.placa ?? "",
-      modelo: v.modelo ?? "",
-      marca: v.marca ?? "",
-      ano: v.ano ? String(v.ano) : "",
-      tipo: v.tipo ?? "",
-      km_atual: String(v.km_atual ?? 0),
-      secretaria_id: v.secretaria_id ?? "",
-      status: v.status ?? "disponivel",
-      proximo_oleo_km: v.proximo_oleo_km ? String(v.proximo_oleo_km) : "",
-      licenciamento_ate: v.licenciamento_ate ?? "",
-      ipva_ate: v.ipva_ate ?? "",
-      seguro_ate: v.seguro_ate ?? "",
+      ...emptyForm,
+      placa: "ABC-1234",
+      modelo: "Fiat Strada",
+      marca: "Fiat",
+      ano: "2024",
+      tipo: "Pickup",
+      km_atual: "12500",
+      status: "disponivel",
+    });
+  }
+
+  function abrirEdicao(veiculo: any) {
+    setEditId(veiculo.id);
+    setForm({
+      placa: veiculo.placa ?? "",
+      modelo: veiculo.modelo ?? "",
+      marca: veiculo.marca ?? "",
+      ano: veiculo.ano ? String(veiculo.ano) : "",
+      tipo: veiculo.tipo ?? "",
+      km_atual: String(veiculo.km_atual ?? 0),
+      secretaria_id: veiculo.secretaria_id ?? "",
+      status: veiculo.status ?? "disponivel",
+      proximo_oleo_km: veiculo.proximo_oleo_km ? String(veiculo.proximo_oleo_km) : "",
+      licenciamento_ate: veiculo.licenciamento_ate ?? "",
+      ipva_ate: veiculo.ipva_ate ?? "",
+      seguro_ate: veiculo.seguro_ate ?? "",
     });
     setOpen(true);
   }
@@ -154,22 +183,19 @@ function VeiculosPage() {
         ipva_ate: form.ipva_ate || null,
         seguro_ate: form.seguro_ate || null,
       };
-      if (editId) {
-        const { error } = await supabase.from("veiculos").update(payload).eq("id", editId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("veiculos").insert(payload);
-        if (error) throw error;
-      }
+      const result = editId
+        ? await supabase.from("veiculos").update(payload).eq("id", editId)
+        : await supabase.from("veiculos").insert(payload);
+      if (result.error) throw result.error;
     },
     onSuccess: () => {
-      toast.success(editId ? "Veículo atualizado" : "Veículo cadastrado");
+      toast.success(editId ? "Veiculo atualizado" : "Veiculo cadastrado");
       qc.invalidateQueries({ queryKey: ["veiculos"] });
       setOpen(false);
       setEditId(null);
       setForm(emptyForm);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const deleteMut = useMutation({
@@ -178,116 +204,121 @@ function VeiculosPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Veículo excluído");
+      toast.success("Veiculo excluido");
       qc.invalidateQueries({ queryKey: ["veiculos"] });
       setExcluir(null);
     },
-    onError: (e: Error) => {
-      toast.error(e.message.includes("foreign") ? "Existem registros vinculados a este veículo." : e.message);
+    onError: (error: Error) => {
+      toast.error(error.message.includes("foreign") ? "Existem registros vinculados a este veiculo." : error.message);
       setExcluir(null);
     },
   });
 
-  const filtrados = veiculos?.rows ?? [];
-  const total = veiculos?.total ?? 0;
+  const hasFilters = !!buscaDeb.trim() || filtroStatus !== "todos";
+  const dbRows = veiculos?.rows ?? [];
+  const filtrados = dbRows.length === 0 && !hasFilters ? [veiculoTeste] : dbRows;
+  const total = dbRows.length === 0 && !hasFilters ? 1 : (veiculos?.total ?? 0);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Veículos</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Veiculos</h1>
           <p className="text-sm text-muted-foreground">Frota cadastrada</p>
         </div>
         {podeEditar && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button onClick={abrirNovo}>
-                <Plus className="mr-2 h-4 w-4" /> Novo veículo
+                <Plus className="mr-2 h-4 w-4" /> Novo veiculo
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
-                <DialogTitle>{editId ? "Editar veículo" : "Cadastrar veículo"}</DialogTitle>
+                <DialogTitle>{editId ? "Editar veiculo" : "Cadastrar veiculo"}</DialogTitle>
               </DialogHeader>
+              {!editId && (
+                <Button type="button" variant="outline" onClick={preencherTeste}>
+                  Preencher cadastro teste
+                </Button>
+              )}
               <form
-                onSubmit={(e) => {
-                  e.preventDefault();
+                onSubmit={(event) => {
+                  event.preventDefault();
                   if (form.placa && form.modelo && !saveMut.isPending) saveMut.mutate();
                 }}
               >
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2 sm:col-span-1 space-y-1">
-                  <Label>Placa *</Label>
-                  <Input value={form.placa} onChange={(e) => setForm({ ...form, placa: e.target.value })} placeholder="ABC-1234" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2 sm:col-span-1 space-y-1">
+                    <Label>Placa *</Label>
+                    <Input value={form.placa} onChange={(e) => setForm({ ...form, placa: e.target.value })} placeholder="ABC-1234" />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1 space-y-1">
+                    <Label>Modelo *</Label>
+                    <Input value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })} placeholder="Fiat Strada" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Marca</Label>
+                    <Input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Ano</Label>
+                    <Input type="number" value={form.ano} onChange={(e) => setForm({ ...form, ano: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Tipo</Label>
+                    <Input value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} placeholder="Pickup, Sedan..." />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Km atual</Label>
+                    <Input type="number" value={form.km_atual} onChange={(e) => setForm({ ...form, km_atual: e.target.value })} />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label>Secretaria responsavel</Label>
+                    <Select value={form.secretaria_id} onValueChange={(value) => setForm({ ...form, secretaria_id: value })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        {(secretarias ?? []).map((secretaria) => (
+                          <SelectItem key={secretaria.id} value={secretaria.id}>{secretaria.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label>Status</Label>
+                    <Select value={form.status} onValueChange={(value: any) => setForm({ ...form, status: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="disponivel">Disponivel</SelectItem>
+                        <SelectItem value="em_uso">Em uso</SelectItem>
+                        <SelectItem value="em_manutencao">Em manutencao</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2 pt-2 border-t">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alertas e agenda</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Proxima troca oleo (km)</Label>
+                    <Input type="number" value={form.proximo_oleo_km} onChange={(e) => setForm({ ...form, proximo_oleo_km: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Licenciamento ate</Label>
+                    <Input type="date" value={form.licenciamento_ate} onChange={(e) => setForm({ ...form, licenciamento_ate: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>IPVA ate</Label>
+                    <Input type="date" value={form.ipva_ate} onChange={(e) => setForm({ ...form, ipva_ate: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Seguro ate</Label>
+                    <Input type="date" value={form.seguro_ate} onChange={(e) => setForm({ ...form, seguro_ate: e.target.value })} />
+                  </div>
                 </div>
-                <div className="col-span-2 sm:col-span-1 space-y-1">
-                  <Label>Modelo *</Label>
-                  <Input value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })} placeholder="Fiat Strada" />
-                </div>
-                <div className="space-y-1">
-                  <Label>Marca</Label>
-                  <Input value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Ano</Label>
-                  <Input type="number" value={form.ano} onChange={(e) => setForm({ ...form, ano: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Tipo</Label>
-                  <Input value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} placeholder="Pickup, Sedan..." />
-                </div>
-                <div className="space-y-1">
-                  <Label>Km atual</Label>
-                  <Input type="number" value={form.km_atual} onChange={(e) => setForm({ ...form, km_atual: e.target.value })} />
-                </div>
-                <div className="col-span-2 space-y-1">
-                  <Label>Secretaria responsável</Label>
-                  <Select value={form.secretaria_id} onValueChange={(v) => setForm({ ...form, secretaria_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                    <SelectContent>
-                      {(secretarias ?? []).map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 space-y-1">
-                  <Label>Status</Label>
-                  <Select value={form.status} onValueChange={(v: any) => setForm({ ...form, status: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="disponivel">Disponível</SelectItem>
-                      <SelectItem value="em_uso">Em uso</SelectItem>
-                      <SelectItem value="em_manutencao">Em manutenção</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 pt-2 border-t">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Alertas e agenda</p>
-                </div>
-                <div className="space-y-1">
-                  <Label>Próxima troca óleo (km)</Label>
-                  <Input type="number" value={form.proximo_oleo_km} onChange={(e) => setForm({ ...form, proximo_oleo_km: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Licenciamento até</Label>
-                  <Input type="date" value={form.licenciamento_ate} onChange={(e) => setForm({ ...form, licenciamento_ate: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>IPVA até</Label>
-                  <Input type="date" value={form.ipva_ate} onChange={(e) => setForm({ ...form, ipva_ate: e.target.value })} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Seguro até</Label>
-                  <Input type="date" value={form.seguro_ate} onChange={(e) => setForm({ ...form, seguro_ate: e.target.value })} />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={!form.placa || !form.modelo || saveMut.isPending}>
-                  Salvar
-                </Button>
-              </DialogFooter>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                  <Button type="submit" disabled={!form.placa || !form.modelo || saveMut.isPending}>Salvar</Button>
+                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
@@ -300,48 +331,75 @@ function VeiculosPage() {
           <Input
             placeholder="Buscar por placa, modelo ou marca"
             value={busca}
-            onChange={(e) => { setBusca(e.target.value); setPage(0); }}
+            onChange={(e) => {
+              setBusca(e.target.value);
+              setPage(0);
+            }}
             className="pl-8"
           />
         </div>
-        <Select value={filtroStatus} onValueChange={(v) => { setFiltroStatus(v); setPage(0); }}>
+        <Select
+          value={filtroStatus}
+          onValueChange={(value) => {
+            setFiltroStatus(value);
+            setPage(0);
+          }}
+        >
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
-            <SelectItem value="disponivel">Disponível</SelectItem>
+            <SelectItem value="disponivel">Disponivel</SelectItem>
             <SelectItem value="em_uso">Em uso</SelectItem>
-            <SelectItem value="em_manutencao">Em manutenção</SelectItem>
+            <SelectItem value="em_manutencao">Em manutencao</SelectItem>
           </SelectContent>
         </Select>
         <span className="text-xs text-muted-foreground ml-auto">{total} resultado(s)</span>
       </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtrados.map((v: any) => (
-          <Card key={v.id} className="p-5">
+        {filtrados.map((veiculo: any) => (
+          <Card key={veiculo.id} className="p-5">
             <div className="flex items-start gap-3">
-              <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${
-                v.status === "em_manutencao" ? "bg-brand-orange/10 text-brand-orange" :
-                v.status === "em_uso" ? "bg-brand-green/10 text-brand-green" :
-                "bg-brand-blue/10 text-brand-blue"
-              }`}>
-                {v.status === "em_manutencao" ? <Wrench className="h-6 w-6" /> : <Car className="h-6 w-6" />}
+              <div
+                className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${
+                  veiculo.status === "em_manutencao"
+                    ? "bg-brand-orange/10 text-brand-orange"
+                    : veiculo.status === "em_uso"
+                      ? "bg-brand-green/10 text-brand-green"
+                      : "bg-brand-blue/10 text-brand-blue"
+                }`}
+              >
+                {veiculo.status === "em_manutencao" ? <Wrench className="h-6 w-6" /> : <Car className="h-6 w-6" />}
               </div>
-              <Link to="/veiculos/$id" params={{ id: v.id }} className="min-w-0 flex-1 group">
-                <h3 className="font-semibold truncate">{v.modelo}</h3>
-                <p className="text-xs text-muted-foreground">{v.marca} {v.ano ? `· ${v.ano}` : ""}</p>
-                <p className="font-mono text-sm mt-1 inline-flex items-center gap-1">
-                  {v.placa}
-                  <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-                </p>
-              </Link>
-              {podeEditar && (
+              {veiculo.isDemo ? (
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold truncate">{veiculo.modelo}</h3>
+                  <p className="text-xs text-muted-foreground">{veiculo.marca} {veiculo.ano ? `- ${veiculo.ano}` : ""}</p>
+                  <p className="font-mono text-sm mt-1">{veiculo.placa}</p>
+                </div>
+              ) : (
+                <Link to="/veiculos/$id" params={{ id: veiculo.id }} className="min-w-0 flex-1 group">
+                  <h3 className="font-semibold truncate">{veiculo.modelo}</h3>
+                  <p className="text-xs text-muted-foreground">{veiculo.marca} {veiculo.ano ? `- ${veiculo.ano}` : ""}</p>
+                  <p className="font-mono text-sm mt-1 inline-flex items-center gap-1">
+                    {veiculo.placa}
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+                  </p>
+                </Link>
+              )}
+              {podeEditar && !veiculo.isDemo && (
                 <div className="flex flex-col gap-1">
-                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => abrirEdicao(v)} aria-label="Editar">
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => abrirEdicao(veiculo)} aria-label="Editar">
                     <Pencil className="h-4 w-4" />
                   </Button>
                   {podeExcluir && (
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setExcluir({ id: v.id, label: `${v.modelo} · ${v.placa}` })} aria-label="Excluir">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => setExcluir({ id: veiculo.id, label: `${veiculo.modelo} - ${veiculo.placa}` })}
+                      aria-label="Excluir"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
@@ -349,10 +407,11 @@ function VeiculosPage() {
               )}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-              <Badge variant="outline">{STATUS_LABEL[v.status]}</Badge>
-              <span className="text-muted-foreground">{v.km_atual?.toLocaleString("pt-BR")} km</span>
-              {v.secretarias?.nome && (
-                <span className="text-muted-foreground">· {v.secretarias.nome}</span>
+              <Badge variant="outline">{STATUS_LABEL[veiculo.status]}</Badge>
+              {veiculo.isDemo && <Badge className="bg-brand-blue/15 text-brand-blue hover:bg-brand-blue/20">Teste</Badge>}
+              <span className="text-muted-foreground">{veiculo.km_atual?.toLocaleString("pt-BR")} km</span>
+              {veiculo.secretarias?.nome && (
+                <span className="text-muted-foreground">- {veiculo.secretarias.nome}</span>
               )}
             </div>
           </Card>
@@ -360,20 +419,20 @@ function VeiculosPage() {
         {filtrados.length === 0 && (
           <Card className="p-8 col-span-full text-center text-muted-foreground">
             {total === 0 && !buscaDeb && filtroStatus === "todos"
-              ? `Nenhum veículo cadastrado${podeEditar ? " ainda. Clique em \"Novo veículo\" para começar." : "."}`
-              : "Nenhum veículo encontrado com esses filtros."}
+              ? `Nenhum veiculo cadastrado${podeEditar ? " ainda. Clique em \"Novo veiculo\" para comecar." : "."}`
+              : "Nenhum veiculo encontrado com esses filtros."}
           </Card>
         )}
       </div>
 
       <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
-      <AlertDialog open={!!excluir} onOpenChange={(o) => !o && setExcluir(null)}>
+      <AlertDialog open={!!excluir} onOpenChange={(isOpen) => !isOpen && setExcluir(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir veículo?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir veiculo?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O veículo <strong>{excluir?.label}</strong> será removido permanentemente.
+              Esta acao nao pode ser desfeita. O veiculo <strong>{excluir?.label}</strong> sera removido permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

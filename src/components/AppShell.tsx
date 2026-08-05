@@ -8,8 +8,7 @@ import { Link } from "@tanstack/react-router";
 
 function roleLabel(role?: string) {
   if (role === "administrador") return "Administrador";
-  if (role === "gestor") return "Gestor";
-  return "Motorista";
+  return "Usuario";
 }
 
 export function AppShell({ children }: { children: ReactNode }) {

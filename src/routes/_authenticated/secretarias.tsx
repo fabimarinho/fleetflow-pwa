@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/secretarias")({
 
 function SecretariasPage() {
   const { data: me } = useProfile();
-  const podeEditar = !!me?.isAdminOrGestor;
+  const podeEditar = !!me?.isAdmin;
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);

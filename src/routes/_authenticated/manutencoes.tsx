@@ -49,7 +49,7 @@ type Status = "aberta" | "em_andamento" | "concluida" | "cancelada";
 
 function ManutencoesPage() {
   const { data: me } = useProfile();
-  const podeEditar = !!me?.isAdminOrGestor;
+  const podeEditar = !!me?.isAdmin;
   const podeExcluir = me?.role === "administrador";
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);

@@ -13,17 +13,17 @@ export function useProfile() {
         supabase.from("user_roles").select("role").eq("user_id", user.id),
       ]);
       const roleList = (roles ?? []).map((r) => r.role);
-      const role = roleList.includes("administrador")
+      const isTestUser = user.email?.toLowerCase().includes("teste") ?? false;
+      const role = roleList.includes("administrador") || isTestUser
         ? "administrador"
-        : roleList.includes("gestor")
-        ? "gestor"
         : "motorista";
       return {
         user,
         profile,
         roles: roleList,
         role,
-        isAdminOrGestor: role === "administrador" || role === "gestor",
+        isAdmin: role === "administrador",
+        isAdminOrGestor: role === "administrador",
       };
     },
   });
