@@ -1,130 +1,109 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
+import { useState } from "react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Truck } from "lucide-react";
-import { traduzErroAuth } from "@/lib/authErrors";
+import {
+  getMe,
+  isAuthenticated,
+  login,
+} from "@/lib/auth";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: "/dashboard" });
+    if (!isAuthenticated()) {
+      return;
+    }
+
+    const usuario = await getMe();
+
+    if (usuario) {
+      throw redirect({
+        to: "/dashboard",
+      });
+    }
   },
+
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
 
-  // login
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  // signup
-  const [nome, setNome] = useState("");
-  const [emailS, setEmailS] = useState("");
-  const [passwordS, setPasswordS] = useState("");
-  // forgot
-  const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
+  const [loading, setLoading] =
+    useState(false);
 
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") navigate({ to: "/dashboard" });
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [navigate]);
+  const [email, setEmail] =
+    useState("");
 
-  async function handleLogin(e: React.FormEvent) {
+  const [password, setPassword] =
+    useState("");
+
+  async function handleLogin(
+    e: React.FormEvent
+  ) {
     e.preventDefault();
+
     const parsed = z
       .object({
-        email: z.string().trim().email("E-mail inválido").max(255),
-        password: z.string().min(1, "Informe sua senha").max(72),
-      })
-      .safeParse({ email, password });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: parsed.data.email,
-      password: parsed.data.password,
-    });
-    setLoading(false);
-    if (error) toast.error(traduzErroAuth(error.message));
-  }
+        email: z
+          .string()
+          .trim()
+          .email("E-mail inválido")
+          .max(255),
 
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
-    const parsed = z
-      .object({
-        nome: z.string().trim().min(2, "Informe seu nome completo").max(100),
-        email: z.string().trim().email("E-mail inválido").max(255),
         password: z
           .string()
-          .min(8, "A senha deve ter no mínimo 8 caracteres")
-          .max(72, "A senha é longa demais"),
+          .min(1, "Informe sua senha")
+          .max(72),
       })
-      .safeParse({ nome, email: emailS, password: passwordS });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      options: {
-        data: { nome: parsed.data.nome },
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
-    setLoading(false);
-    if (error) return toast.error(traduzErroAuth(error.message));
-    toast.success("Conta criada! Verifique seu e-mail para confirmar.");
-  }
+      .safeParse({
+        email,
+        password,
+      });
 
-  async function handleForgot(e: React.FormEvent) {
-    e.preventDefault();
-    const parsed = z
-      .string()
-      .trim()
-      .email("Informe um e-mail válido")
-      .max(255)
-      .safeParse(forgotEmail);
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0].message);
+      toast.error(
+        parsed.error.issues[0].message
+      );
       return;
     }
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(traduzErroAuth(error.message));
-      return;
+
+    try {
+      setLoading(true);
+
+      await login(
+        parsed.data.email,
+        parsed.data.password
+      );
+
+      toast.success(
+        "Login realizado com sucesso."
+      );
+
+      await navigate({
+        to: "/dashboard",
+        replace: true,
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível realizar o login."
+      );
+    } finally {
+      setLoading(false);
     }
-    toast.success("Enviamos um link de redefinição para seu e-mail.");
-    setForgotOpen(false);
-    setForgotEmail("");
   }
 
   return (
@@ -132,100 +111,93 @@ function AuthPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-6 text-white">
           <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-white/10 backdrop-blur mb-4">
-            <Truck className="h-8 w-8" aria-hidden />
+            <Truck
+              className="h-8 w-8"
+              aria-hidden
+            />
           </div>
-          <h1 className="text-2xl font-bold">Prefeitura Municipal</h1>
-          <p className="text-white/80 text-sm">Sistema de Gestão de Frota</p>
-        </div>
-        <Card className="p-6">
-          <Tabs defaultValue="login">
-            <TabsList className="grid grid-cols-2 w-full mb-4">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Senha</Label>
-                    <button
-                      type="button"
-                      onClick={() => setForgotOpen(true)}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Esqueci minha senha
-                    </button>
-                  </div>
-                  <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Entrando..." : "ENTRAR"}
-                </Button>
-              </form>
-            </TabsContent>
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome completo</Label>
-                  <Input id="nome" autoComplete="name" value={nome} onChange={(e) => setNome(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="emailS">E-mail</Label>
-                  <Input id="emailS" type="email" autoComplete="email" value={emailS} onChange={(e) => setEmailS(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="passwordS">Senha</Label>
-                  <Input id="passwordS" type="password" autoComplete="new-password" value={passwordS} onChange={(e) => setPasswordS(e.target.value)} minLength={8} required />
-                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres.</p>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Cadastrando..." : "CRIAR CONTA"}
-                </Button>
-                <p className="text-xs text-muted-foreground text-center">
-                  O primeiro usuário cadastrado torna-se administrador.
-                </p>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </Card>
-        <p className="text-center text-white/70 text-xs mt-6">© 2026 Prefeitura Municipal · v1.0.0</p>
-      </div>
 
-      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Recuperar senha</DialogTitle>
-            <DialogDescription>
-              Informe seu e-mail e enviaremos um link para você criar uma nova senha.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleForgot} className="space-y-4">
+          <h1 className="text-2xl font-bold">
+            Prefeitura Municipal
+          </h1>
+
+          <p className="text-white/80 text-sm">
+            Sistema de Gestão de Frota
+          </p>
+        </div>
+
+        <Card className="p-6">
+          <div className="mb-6 text-center">
+            <h2 className="text-lg font-semibold">
+              Entrar
+            </h2>
+
+            <p className="text-sm text-muted-foreground">
+              Informe seu e-mail e senha para
+              acessar o sistema.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleLogin}
+            className="space-y-4"
+          >
             <div className="space-y-2">
-              <Label htmlFor="forgotEmail">E-mail</Label>
+              <Label htmlFor="email">
+                E-mail
+              </Label>
+
               <Input
-                id="forgotEmail"
+                id="email"
                 type="email"
                 autoComplete="email"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
+                value={email}
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
                 required
               />
             </div>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setForgotOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Enviando..." : "Enviar link"}
-              </Button>
-            </DialogFooter>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Senha
+              </Label>
+
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading
+                ? "Entrando..."
+                : "ENTRAR"}
+            </Button>
           </form>
-        </DialogContent>
-      </Dialog>
+
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Cadastro e recuperação de senha serão
+            disponibilizados pela administração
+            do sistema.
+          </p>
+        </Card>
+
+        <p className="text-center text-white/70 text-xs mt-6">
+          © 2026 Prefeitura Municipal · v1.0.0
+        </p>
+      </div>
     </div>
   );
 }

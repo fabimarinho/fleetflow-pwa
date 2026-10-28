@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiRequest } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,25 +92,35 @@ function VeiculosPage() {
   const { data: veiculos } = useQuery({
     queryKey: ["veiculos", { q: buscaDeb, status: filtroStatus, page, pageSize }],
     queryFn: async () => {
-      let query = supabase
-        .from("veiculos")
-        .select("*, secretarias(nome)", { count: "exact" })
-        .order("modelo");
-      if (filtroStatus !== "todos") query = query.eq("status", filtroStatus as any);
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+
       const term = buscaDeb.trim();
+
       if (term) {
-        const like = `%${term}%`;
-        query = query.or(`placa.ilike.${like},modelo.ilike.${like},marca.ilike.${like}`);
+        params.set("q", term);
       }
-      query = query.range(page * pageSize, page * pageSize + pageSize - 1);
-      const { data, count } = await query;
-      return { rows: data ?? [], total: count ?? 0 };
+
+      if (filtroStatus !== "todos") {
+        params.set("status", filtroStatus);
+      }
+
+      const response = await apiRequest<any>(
+        `/veiculos?${params.toString()}`
+      );
+
+      return response.data;
     },
   });
 
   const { data: secretarias } = useQuery({
     queryKey: ["secretarias"],
-    queryFn: async () => (await supabase.from("secretarias").select("*").order("nome")).data ?? [],
+    queryFn: async () => {
+      const response = await apiRequest<any>("/secretarias");
+      return response.data ?? [];
+    },
   });
 
   const veiculoTeste = {
@@ -183,25 +193,43 @@ function VeiculosPage() {
         ipva_ate: form.ipva_ate || null,
         seguro_ate: form.seguro_ate || null,
       };
-      const result = editId
-        ? await supabase.from("veiculos").update(payload).eq("id", editId)
-        : await supabase.from("veiculos").insert(payload);
-      if (result.error) throw result.error;
+      if (editId) {
+        await apiRequest(`/veiculos/${editId}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await apiRequest("/veiculos", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+      }
     },
     onSuccess: () => {
-      toast.success(editId ? "Veiculo atualizado" : "Veiculo cadastrado");
-      qc.invalidateQueries({ queryKey: ["veiculos"] });
+      toast.success(
+        editId
+          ? "Veiculo atualizado"
+          : "Veiculo cadastrado"
+      );
+
       setOpen(false);
       setEditId(null);
       setForm(emptyForm);
+
+      qc.invalidateQueries({
+        queryKey: ["veiculos"],
+      });
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
   });
 
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("veiculos").delete().eq("id", id);
-      if (error) throw error;
+      await apiRequest(`/veiculos/${id}`, {
+        method: "DELETE",
+      });
     },
     onSuccess: () => {
       toast.success("Veiculo excluido");

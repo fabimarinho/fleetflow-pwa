@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { apiRequest } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,23 +32,30 @@ function SecretariasPage() {
 
   const { data: secretarias } = useQuery({
     queryKey: ["secretarias-full"],
-    queryFn: async () =>
-      (await supabase.from("secretarias").select("*").order("nome")).data ?? [],
+    queryFn: async () => {
+      const response = await apiRequest<any>("/secretarias");
+      return response.data ?? [];
+    },
   });
 
   const saveMut = useMutation({
     mutationFn: async () => {
       if (editing) {
-        const { error } = await supabase
-          .from("secretarias")
-          .update({ nome: form.nome, sigla: form.sigla || null })
-          .eq("id", editing.id);
-        if (error) throw error;
+        await apiRequest(`/secretarias/${editing.id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            nome: form.nome,
+            sigla: form.sigla || null,
+          }),
+        });
       } else {
-        const { error } = await supabase
-          .from("secretarias")
-          .insert({ nome: form.nome, sigla: form.sigla || null });
-        if (error) throw error;
+        await apiRequest("/secretarias", {
+          method: "POST",
+          body: JSON.stringify({
+            nome: form.nome,
+            sigla: form.sigla || null,
+          }),
+        });
       }
     },
     onSuccess: () => {
@@ -64,8 +71,9 @@ function SecretariasPage() {
 
   const delMut = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("secretarias").delete().eq("id", id);
-      if (error) throw error;
+      await apiRequest(`/secretarias/${id}`, {
+        method: "DELETE",
+      });
     },
     onSuccess: () => {
       toast.success("Secretaria removida");

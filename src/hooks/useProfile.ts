@@ -1,30 +1,53 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { getMe } from "@/lib/auth";
 
 export function useProfile() {
   return useQuery({
     queryKey: ["profile"],
+
     queryFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-      if (!user) return null;
-      const [{ data: profile }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("*, secretarias(nome,sigla)").eq("id", user.id).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", user.id),
-      ]);
-      const roleList = (roles ?? []).map((r) => r.role);
-      const isTestUser = user.email?.toLowerCase().includes("teste") ?? false;
-      const role = roleList.includes("administrador") || isTestUser
-        ? "administrador"
-        : "motorista";
+      const usuario = await getMe();
+
+      if (!usuario) {
+        return null;
+      }
+
+      const role =
+        usuario.perfil === "ADMINISTRADOR"
+          ? "administrador"
+          : usuario.perfil === "GESTOR"
+            ? "gestor"
+            : "motorista";
+
       return {
-        user,
-        profile,
-        roles: roleList,
+        user: {
+          id: usuario.id,
+          email: usuario.email,
+        },
+
+        profile: {
+          id: usuario.id,
+          nome: usuario.nome,
+          matricula: usuario.matricula,
+          telefone: usuario.telefone,
+          secretaria_id:
+            usuario.secretaria?.id ?? null,
+          secretarias: usuario.secretaria,
+        },
+
+        roles: [role],
+
         role,
-        isAdmin: role === "administrador",
-        isAdminOrGestor: role === "administrador",
+
+        isAdmin:
+          usuario.perfil === "ADMINISTRADOR",
+
+        isAdminOrGestor:
+          usuario.perfil === "ADMINISTRADOR" ||
+          usuario.perfil === "GESTOR",
       };
     },
+
+    retry: false,
   });
 }

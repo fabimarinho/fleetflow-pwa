@@ -24,7 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { supabase } from "@/integrations/supabase/client";
+import { logout } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 const items = [
@@ -49,7 +49,7 @@ export function AppSidebar() {
   async function handleSignOut() {
     await qc.cancelQueries();
     qc.clear();
-    await supabase.auth.signOut();
+    logout();
     navigate({ to: "/auth", replace: true });
   }
 
