@@ -64,6 +64,7 @@ const emptyForm = {
 function ServidoresPage() {
   const { data: me } = useProfile();
   const isAdmin = me?.role === "administrador";
+
   const [open, setOpen] = useState(false);
   const [servidores, setServidores] = useState<Servidor[]>([]);
   const [form, setForm] = useState(emptyForm);
@@ -81,6 +82,7 @@ function ServidoresPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
+
       if (raw) {
         setServidores(JSON.parse(raw));
         return;
@@ -89,7 +91,9 @@ function ServidoresPage() {
       // Mantem a lista padrao se o armazenamento local estiver ilegivel.
     }
 
-    const adminName = me?.profile?.nome || me?.user?.email || "Usuario teste";
+    const adminName =
+      me?.profile?.nome || me?.user?.email || "Usuario teste";
+
     setServidores([
       {
         id: "admin-local",
@@ -120,16 +124,23 @@ function ServidoresPage() {
 
   function salvarServidor(e: React.FormEvent) {
     e.preventDefault();
+
     if (!isAdmin) {
       toast.error("Apenas o administrador pode cadastrar servidores.");
       return;
     }
+
     if (!form.nome.trim()) {
       toast.error("Informe o nome do servidor.");
       return;
     }
-    const secretaria = secretarias.find((s) => s.id === form.secretaria_id);
+
+    const secretaria = secretarias.find(
+      (s) => s.id === form.secretaria_id
+    );
+
     const id = crypto.randomUUID?.() ?? String(Date.now());
+
     setServidores((current) => [
       ...current,
       {
@@ -142,6 +153,7 @@ function ServidoresPage() {
         administrador: false,
       },
     ]);
+
     toast.success("Servidor cadastrado");
     setForm(emptyForm);
     setOpen(false);
@@ -149,75 +161,103 @@ function ServidoresPage() {
 
   function removerServidor(id: string) {
     const servidor = servidores.find((item) => item.id === id);
+
     if (servidor?.administrador) {
       toast.error("O administrador principal nao pode ser removido.");
       return;
     }
-    setServidores((current) => current.filter((item) => item.id !== id));
+
+    setServidores((current) =>
+      current.filter((item) => item.id !== id)
+    );
+
     toast.success("Servidor removido");
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Servidores</h1>
-          <p className="text-sm text-muted-foreground">
+    <div className="w-full min-w-0 space-y-5 sm:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight">
+            Servidores
+          </h1>
+
+          <p className="mt-1 text-sm text-muted-foreground">
             Cadastro simples para uso local. Somente o administrador edita.
           </p>
         </div>
+
         {isAdmin && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> Novo servidor
+              <Button className="w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo servidor
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+
+            <DialogContent className="max-h-[90dvh] w-[calc(100%-1.5rem)] max-w-lg overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Cadastrar servidor</DialogTitle>
               </DialogHeader>
-              <form onSubmit={salvarServidor} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1 sm:col-span-2">
+
+              <form onSubmit={salvarServidor} className="space-y-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="nome">Nome *</Label>
                     <Input
                       id="nome"
                       value={form.nome}
-                      onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, nome: e.target.value })
+                      }
                       placeholder="Nome completo"
                       autoFocus
                     />
                   </div>
-                  <div className="space-y-1">
+
+                  <div className="space-y-2">
                     <Label htmlFor="matricula">Matricula</Label>
                     <Input
                       id="matricula"
                       value={form.matricula}
-                      onChange={(e) => setForm({ ...form, matricula: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, matricula: e.target.value })
+                      }
                     />
                   </div>
-                  <div className="space-y-1">
+
+                  <div className="space-y-2">
                     <Label htmlFor="telefone">Telefone</Label>
                     <Input
                       id="telefone"
                       value={form.telefone}
-                      onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, telefone: e.target.value })
+                      }
                       placeholder="(00) 00000-0000"
                     />
                   </div>
-                  <div className="space-y-1 sm:col-span-2">
+
+                  <div className="space-y-2 sm:col-span-2">
                     <Label>Secretaria</Label>
+
                     <Select
                       value={form.secretaria_id}
-                      onValueChange={(value) => setForm({ ...form, secretaria_id: value })}
+                      onValueChange={(value) =>
+                        setForm({ ...form, secretaria_id: value })
+                      }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
+
                       <SelectContent>
                         {secretarias.map((secretaria) => (
-                          <SelectItem key={secretaria.id} value={secretaria.id}>
+                          <SelectItem
+                            key={secretaria.id}
+                            value={secretaria.id}
+                          >
                             {secretaria.nome}
                           </SelectItem>
                         ))}
@@ -225,11 +265,22 @@ function ServidoresPage() {
                     </Select>
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+
+                <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => setOpen(false)}
+                  >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={!form.nome.trim()}>
+
+                  <Button
+                    type="submit"
+                    className="w-full sm:w-auto"
+                    disabled={!form.nome.trim()}
+                  >
                     Cadastrar
                   </Button>
                 </DialogFooter>
@@ -239,52 +290,85 @@ function ServidoresPage() {
         )}
       </div>
 
-      <Card className="p-0 overflow-hidden hidden md:block">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="text-left p-3">Nome</th>
-              <th className="text-left p-3">Matricula</th>
-              <th className="text-left p-3">Telefone</th>
-              <th className="text-left p-3">Secretaria</th>
-              <th className="text-left p-3">Acesso</th>
-              {isAdmin && <th className="text-right p-3">Acoes</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {servidores.map((servidor) => (
-              <tr key={servidor.id} className="border-t">
-                <td className="p-3 font-medium">{servidor.nome}</td>
-                <td className="p-3 font-mono text-xs">{servidor.matricula || "-"}</td>
-                <td className="p-3">{servidor.telefone || "-"}</td>
-                <td className="p-3">{servidor.secretaria_nome || "-"}</td>
-                <td className="p-3">
-                  <AccessBadge administrador={servidor.administrador} />
-                </td>
+      {/* Tabela para computador */}
+      <Card className="hidden overflow-hidden p-0 md:block">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="p-3 text-left">Nome</th>
+                <th className="p-3 text-left">Matricula</th>
+                <th className="p-3 text-left">Telefone</th>
+                <th className="p-3 text-left">Secretaria</th>
+                <th className="p-3 text-left">Acesso</th>
                 {isAdmin && (
-                  <td className="p-3 text-right">
-                    {!servidor.administrador && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removerServidor(servidor.id)}
-                        aria-label="Remover servidor"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    )}
-                  </td>
+                  <th className="p-3 text-right">Acoes</th>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {servidores.map((servidor) => (
+                <tr key={servidor.id} className="border-t">
+                  <td className="p-3 font-medium">
+                    {servidor.nome}
+                  </td>
+
+                  <td className="p-3 font-mono text-xs">
+                    {servidor.matricula || "-"}
+                  </td>
+
+                  <td className="p-3">
+                    {servidor.telefone || "-"}
+                  </td>
+
+                  <td className="p-3">
+                    {servidor.secretaria_nome || "-"}
+                  </td>
+
+                  <td className="p-3">
+                    <AccessBadge
+                      administrador={servidor.administrador}
+                    />
+                  </td>
+
+                  {isAdmin && (
+                    <td className="p-3 text-right">
+                      {!servidor.administrador && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removerServidor(servidor.id)}
+                          aria-label="Remover servidor"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+
+              {servidores.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={isAdmin ? 6 : 5}
+                    className="p-8 text-center text-muted-foreground"
+                  >
+                    Nenhum servidor cadastrado.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
-      <div className="grid gap-3 md:hidden">
+      {/* Cartoes para celular */}
+      <div className="grid min-w-0 gap-3 md:hidden">
         {servidores.map((servidor) => (
-          <Card key={servidor.id} className="p-4">
-            <div className="flex items-start gap-3">
+          <Card key={servidor.id} className="min-w-0 p-4">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-blue/10 text-brand-blue">
                 {servidor.administrador ? (
                   <Crown className="h-5 w-5" />
@@ -292,31 +376,72 @@ function ServidoresPage() {
                   <UserRound className="h-5 w-5" />
                 )}
               </div>
+
               <div className="min-w-0 flex-1">
-                <p className="font-medium truncate">{servidor.nome}</p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="break-words font-medium">
+                  {servidor.nome}
+                </p>
+
+                <p className="mt-1 break-words text-xs text-muted-foreground">
                   {servidor.secretaria_nome || "Sem secretaria"}
                 </p>
+
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {servidor.matricula || "Sem matricula"} {servidor.telefone ? `- ${servidor.telefone}` : ""}
+                  Matricula: {servidor.matricula || "Sem matricula"}
                 </p>
+
+                {servidor.telefone && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Telefone: {servidor.telefone}
+                  </p>
+                )}
+
+                <div className="mt-3">
+                  <AccessBadge
+                    administrador={servidor.administrador}
+                  />
+                </div>
               </div>
-              <AccessBadge administrador={servidor.administrador} />
+
+              {isAdmin && !servidor.administrador && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => removerServidor(servidor.id)}
+                  aria-label={`Remover ${servidor.nome}`}
+                >
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                </Button>
+              )}
             </div>
           </Card>
         ))}
+
+        {servidores.length === 0 && (
+          <Card className="p-6 text-center text-sm text-muted-foreground">
+            Nenhum servidor cadastrado.
+          </Card>
+        )}
       </div>
     </div>
   );
 }
 
-function AccessBadge({ administrador }: { administrador: boolean }) {
+function AccessBadge({
+  administrador,
+}: {
+  administrador: boolean;
+}) {
   if (administrador) {
     return (
       <Badge className="bg-brand-purple/15 text-brand-purple hover:bg-brand-purple/20">
-        <Crown className="mr-1 h-3 w-3" /> Administrador
+        <Crown className="mr-1 h-3 w-3" />
+        Administrador
       </Badge>
     );
   }
+
   return <Badge variant="outline">Sem acesso ao sistema</Badge>;
 }

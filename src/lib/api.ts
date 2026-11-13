@@ -87,3 +87,45 @@ export async function apiRequest<T>(
 
   return data as T;
 }
+
+// Baixa arquivos protegidos usando o token do usuário.
+export async function apiDownload(
+  endpoint: string
+): Promise<Blob> {
+  const headers = new Headers();
+  const token = getToken();
+
+  if (token) {
+    headers.set(
+      "Authorization",
+      `Bearer ${token}`
+    );
+  }
+
+  const response = await fetch(
+    `${API_URL}${endpoint}`,
+    {
+      method: "GET",
+      headers,
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      removeToken();
+    }
+
+    let mensagem = "Não foi possível carregar a imagem.";
+
+    try {
+      const data = await response.json();
+      mensagem = data?.message || mensagem;
+    } catch {
+      // Mantém a mensagem padrão.
+    }
+
+    throw new Error(mensagem);
+  }
+
+  return response.blob();
+}

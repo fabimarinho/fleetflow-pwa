@@ -34,3 +34,20 @@ dist-ssr
 # Environment files
 .env
 backend/.env
+
+# Arquivos privados enviados pelos usuarios
+backend/uploads/
+
+# Arquivos de backup e temporarios
+*.bak
+*.bak-*
+*.save
+nano.*.save
+
+# Arquivos de ambiente em qualquer pasta
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example

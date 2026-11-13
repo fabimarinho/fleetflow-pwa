@@ -1,3 +1,4 @@
+
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
@@ -7,6 +8,7 @@ import {
   Building2,
   Wrench,
   Fuel,
+  CalendarDays,
   BarChart3,
   Settings,
   LogOut,
@@ -25,7 +27,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { logout } from "@/lib/auth";
-import { useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+interface ConfiguracaoSistema {
+  nomeSistema: string;
+}
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, disabled: false },
@@ -35,8 +42,9 @@ const items = [
   { title: "Secretarias", url: "/secretarias", icon: Building2, disabled: false },
   { title: "Abastecimentos", url: "/abastecimentos", icon: Fuel, disabled: false },
   { title: "Manutenções", url: "/manutencoes", icon: Wrench, disabled: false },
+  { title: "Agendamentos", url: "/agendamentos", icon: CalendarDays, disabled: false },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, disabled: false },
-  { title: "Configurações", url: "#", icon: Settings, disabled: true },
+  { title: "Configurações", url: "/configuracoes", icon: Settings, disabled: false },
 ];
 
 export function AppSidebar() {
@@ -46,6 +54,22 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  const configuracaoQuery = useQuery({
+    queryKey: ["configuracao-sistema"],
+    queryFn: async () => {
+      const response = await apiRequest<{
+        success: boolean;
+        data: ConfiguracaoSistema;
+      }>("/configuracoes-sistema");
+
+      return response.data;
+    },
+    retry: false,
+  });
+
+  const nomeSistema =
+    configuracaoQuery.data?.nomeSistema || "Gestão de Frota";
+
   async function handleSignOut() {
     await qc.cancelQueries();
     qc.clear();
@@ -54,7 +78,10 @@ export function AppSidebar() {
   }
 
   const isActive = (url: string) =>
-    pathname === url || (url !== "/dashboard" && url !== "#" && pathname.startsWith(url));
+    pathname === url ||
+    (url !== "/dashboard" &&
+      url !== "#" &&
+      pathname.startsWith(url));
 
   return (
     <Sidebar collapsible="icon">
@@ -63,13 +90,18 @@ export function AppSidebar() {
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <Crown className="h-5 w-5" />
           </div>
+
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/70 leading-tight">
                 Prefeitura Municipal
               </p>
-              <p className="text-sm font-bold text-sidebar-foreground leading-tight truncate">
-                Gestão de Frota
+
+              <p
+                className="text-sm font-bold text-sidebar-foreground leading-tight truncate"
+                title={nomeSistema}
+              >
+                {nomeSistema}
               </p>
             </div>
           )}
@@ -91,7 +123,11 @@ export function AppSidebar() {
                       <span>{item.title}</span>
                     </SidebarMenuButton>
                   ) : (
-                    <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                    >
                       <Link to={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
@@ -108,14 +144,20 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut} tooltip="Sair">
+            <SidebarMenuButton
+              onClick={handleSignOut}
+              tooltip="Sair"
+            >
               <LogOut />
               <span>Sair</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
         {!collapsed && (
-          <p className="px-2 pb-2 text-[10px] text-sidebar-foreground/50">v1.0.0 · © 2026</p>
+          <p className="px-2 pb-2 text-[10px] text-sidebar-foreground/50">
+            v1.0.0 · © 2026
+          </p>
         )}
       </SidebarFooter>
     </Sidebar>
