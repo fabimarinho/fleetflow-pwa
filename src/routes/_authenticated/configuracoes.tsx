@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Plus, Pencil, Search, Settings, UserCircle } from "lucide-react";
 import { toast } from "sonner";
+import { MeuPerfilForm } from "@/components/MeuPerfilForm";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
@@ -603,15 +604,7 @@ function ConfiguracoesPage() {
         </TabsContent>
 
         <TabsContent value="perfil" className="mt-5">
-          <Card className="p-6">
-            <UserCircle className="mb-3 h-8 w-8 text-muted-foreground" />
-            <h2 className="font-semibold">Meu perfil</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Para consultar e editar seu perfil, utilize a opção Meu perfil
-              disponível no cabeçalho do sistema. A integração desta área será
-              feita na próxima etapa.
-            </p>
-          </Card>
+          <MeuPerfilForm />
         </TabsContent>
       </Tabs>
     </div>
